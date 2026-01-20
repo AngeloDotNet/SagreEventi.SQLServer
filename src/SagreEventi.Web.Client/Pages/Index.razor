@@ -1,0 +1,36 @@
+﻿@page "/"
+@inject EventiLocalStorage eventiLocalStorage
+@inject IJSRuntime jsRuntime
+
+<TitlePage />
+
+<div class="container">
+    <div class="row">
+         <div class="col-12"><h1>Sagre ed Eventi</h1></div>
+    </div>
+    <div class="row">
+        <div class="col-12"><br /></div>
+    </div>
+
+    @if (ListaEventi == null)
+    {
+        <div class="row">
+            <div class="col-12">Loading...</div>
+        </div>
+    }
+    else
+    {
+        <SyncEventi ForceRefreshEventCallback="RefreshListaEventiAsync" CountEventi="@(ListaEventi.Count())" CountSync="@(EventiDaSincronizzare)" />
+
+        <ElencoEventi Eventi="ListaEventi" CountEventi="@(ListaEventi.Count())" CountSync="@(EventiDaSincronizzare)" />
+    }
+
+    <div class="row">
+       <div class="col-12"><br /></div>
+    </div>
+
+    <div class="row">
+        <div class="col-12"><div class="alert alert-dark" role="alert">Versione 1.1 -
+            Ideata e realizzata da <a href="https://about.me/AngeloPirola">Angelo Pirola</a></div></div>
+    </div>
+</div>

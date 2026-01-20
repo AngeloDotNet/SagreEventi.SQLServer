@@ -1,0 +1,41 @@
+﻿@inject IJSRuntime JsRuntime
+@inject EventiLocalStorage eventiLocalStorage
+@implements IDisposable
+
+@if (OnLine)
+{
+    <div class="row">
+        <div class="col-12" style="text-align: right;">
+            <button class="btn btn-primary" @onclick="SynchronizeAsync" disabled="@IsBusy">
+                @if (IsBusy)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span>Aggiornamento in corso...</span>
+                }
+                else
+                {
+                    <span><i class="fas fa-sync"></i> Aggiorna eventi</span>
+                }
+            </button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12"><div class="alert alert-success" role="alert">Stato applicazione: <b>Online</b></div></div>
+    </div>
+
+    @if (CountEventi == 0 || CountSync > 0)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-warning" role="alert">Premere il pulsante AGGIORNA EVENTI per sincronizzare gli eventi. Grazie</div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger" role="alert">Stato applicazione: <b>Offline - Connessione assente</b></div>
+        </div>
+    </div>
+}

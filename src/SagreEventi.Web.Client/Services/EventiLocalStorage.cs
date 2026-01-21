@@ -9,16 +9,18 @@ public class EventiLocalStorage(HttpClient httpClient, ILocalStorageService loca
     private readonly HttpClient httpClient = httpClient;
     private readonly ILocalStorageService localStorageService = localStorageService;
 
-    const string eventiLocalStore = "EventiLocalStore";
-    const string pathApplicationAPI = "api/Eventi";
+    const string EventiLocalStore = "EventiLocalStore";
+    const string PathApplicationAPI = "api/Eventi";
 
     /// <summary>
-    /// Gets a list of locally saved events
+    /// Gets the stored <see cref="EventiStore"/> from browser local storage.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>
+    /// The stored <see cref="EventiStore"/> if present; otherwise a new empty <see cref="EventiStore"/>.
+    /// </returns>
     public async Task<EventiStore> GetEventiStoreAsync()
     {
-        var eventoStore = await localStorageService.GetItemAsync<EventiStore>(eventiLocalStore);
+        var eventoStore = await localStorageService.GetItemAsync<EventiStore>(EventiLocalStore);
 
         eventoStore ??= new EventiStore();
 
@@ -26,10 +28,16 @@ public class EventiLocalStorage(HttpClient httpClient, ILocalStorageService loca
     }
 
     /// <summary>
-    /// Save the new event
+    /// Adds or updates an <see cref="EventoModel"/> in the local store and persists the store to browser local storage.
     /// </summary>
-    /// <param name="eventoModel"></param>
-    /// <returns></returns>
+    /// <param name="eventoModel">
+    /// The event to add or update. If <see cref="EventoModel.Id"/> is <see langword="null" /> or empty a new GUID is generated.
+    /// </param>
+    /// <returns>A <see cref="Task"/> that completes when the store has been persisted.</returns>
+    /// <remarks>
+    /// This method updates <see cref="EventoModel.DataOraUltimaModifica"/> to <see cref="DateTime.Now"/> before saving.
+    /// If the event already exists it is replaced; otherwise it is appended to the list.
+    /// </remarks>
     public async Task SalvaEventoAsync(EventoModel eventoModel)
     {
         var eventiStore = await GetEventiStoreAsync();
@@ -53,13 +61,22 @@ public class EventiLocalStorage(HttpClient httpClient, ILocalStorageService loca
             }
         }
 
-        await localStorageService.SetItemAsync(eventiLocalStore, eventiStore);
+        await localStorageService.SetItemAsync(EventiLocalStore, eventiStore);
     }
 
     /// <summary>
-    /// Performs event synchronization between frontend and backend
+    /// Synchronizes local events with the backend API.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>A <see cref="Task"/> that completes when synchronization is finished.</returns>
+    /// <remarks>
+    /// The method performs the following steps:
+    /// 1. Pushes locally modified events (those with a modification date newer than the last server sync) to
+    ///    <c>PUT api/Eventi/UpdateEventi</c>.
+    /// 2. Removes locally concluded events after a successful push.
+    /// 3. Pulls server-side changes since the last known server sync from
+    ///    <c>GET api/Eventi/GetEventi?since=...</c> and merges them into the local store.
+    /// 4. Updates the local store's last server sync timestamp to the maximum modification time returned by the server.
+    /// </remarks>
     public async Task EseguiSyncWithDatabaseAsync()
     {
         var EventoStore = await GetEventiStoreAsync();
@@ -69,13 +86,13 @@ public class EventiLocalStorage(HttpClient httpClient, ILocalStorageService loca
 
         if (ListaEventiDaSincronizzare.Any())
         {
-            (await httpClient.PutAsJsonAsync($"{pathApplicationAPI}/UpdateEventi", ListaEventiDaSincronizzare)).EnsureSuccessStatusCode();
+            (await httpClient.PutAsJsonAsync($"{PathApplicationAPI}/UpdateEventi", ListaEventiDaSincronizzare)).EnsureSuccessStatusCode();
 
             //Quelli conclusi non servono più quindi li cancello
             EventoStore.ListaEventi.RemoveAll(x => x.EventoConcluso);
         }
 
-        var json = await httpClient.GetFromJsonAsync<List<EventoModel>>($"{pathApplicationAPI}/GetEventi?since={DataOraUltimoSyncServer:o}");
+        var json = await httpClient.GetFromJsonAsync<List<EventoModel>>($"{PathApplicationAPI}/GetEventi?since={DataOraUltimoSyncServer:o}");
 
         foreach (var itemjson in json)
         {
@@ -107,13 +124,16 @@ public class EventiLocalStorage(HttpClient httpClient, ILocalStorageService loca
             EventoStore.DataOraUltimoSyncServer = json.Max(x => x.DataOraUltimaModifica);
         }
 
-        await localStorageService.SetItemAsync(eventiLocalStore, EventoStore);
+        await localStorageService.SetItemAsync(EventiLocalStore, EventoStore);
     }
 
     /// <summary>
-    /// Gets a list of events
+    /// Returns a list of non-concluded events from the local store, sorted by name.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>
+    /// A <see cref="Task{TResult}"/> that returns a <see cref="List{EventoModel}"/> containing events
+    /// where <c>EventoConcluso</c> is <see langword="false" />, ordered by <c>NomeEvento</c>.
+    /// </returns>
     public async Task<List<EventoModel>> GetListaEventiAsync()
     {
         var eventiStore = await GetEventiStoreAsync();
@@ -122,9 +142,9 @@ public class EventiLocalStorage(HttpClient httpClient, ILocalStorageService loca
     }
 
     /// <summary>
-    /// Gets a list of locally saved events to synchronize
+    /// Returns the count of locally stored events that have been modified since the last server sync and need synchronization.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>A <see cref="Task{Int32}"/> representing the number of events pending sync.</returns>
     public async Task<int> GetEventiDaSincronizzareAsync()
     {
         var eventiStore = await GetEventiStoreAsync();

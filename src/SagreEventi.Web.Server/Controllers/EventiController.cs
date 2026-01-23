@@ -13,15 +13,20 @@ public class EventiController(ILogger<EventiController> logger, IEventiService e
     private readonly IEventiService eventiService = eventiService;
 
     [HttpGet]
-    public async Task<List<EventoModel>> GetEventiAsync([FromQuery] DateTime since)
+    public async Task<List<EventoModel>> GetEventiAsync([FromQuery] DateTime since, HttpContext httpContext)
     {
-        return await eventiService.GetEventi(since);
+        logger.LogInformation("GetEventiAsync called with since: {Since}", since);
+        var result = await eventiService.GetEventiAsync(since, httpContext.RequestAborted);
+
+        return result;
     }
 
     [HttpPut]
-    public async Task<IActionResult> UpdateEventiAsync(List<EventoModel> eventi)
+    public async Task<IActionResult> UpdateEventiAsync(List<EventoModel> eventi, HttpContext httpContext)
     {
-        await eventiService.UpdateEventi(eventi);
+        logger.LogInformation("UpdateEventiAsync called with {Count} eventi", eventi.Count);
+        await eventiService.UpdateEventiAsync(eventi, httpContext.RequestAborted);
+
         return Ok();
     }
 }

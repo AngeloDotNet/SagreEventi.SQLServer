@@ -41,7 +41,7 @@ public class Startup(IConfiguration configuration)
             .WithDefaultEntryOptions(new FusionCacheEntryOptions
             {
                 Duration = TimeSpan.FromMinutes(5),
-                Priority = CacheItemPriority.Low
+                Priority = CacheItemPriority.Low,
             });
 
         services.AddDbContextPool<AppDbContext>(optionsBuilder =>
@@ -75,7 +75,7 @@ public class Startup(IConfiguration configuration)
             app.UseWebAssemblyDebugging();
 
             app.UseSwagger();
-            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sagre ed Eventi v1"));
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{app.Environment.ApplicationName} v1"));
         }
 
         app.UseBlazorFrameworkFiles();

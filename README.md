@@ -180,8 +180,10 @@ Contributions are always welcome. Feel free to report issues and submit pull req
 3. Make your changes
 4. Submit a pull requests (targeting develop)
 
+<!--
 ## 💡 Inspired by
 
 https://bit.ly/3bVT5q4
 
 The structure of this README is inspired by [MoneyBrain](https://github.com/kasuken/MoneyBrain).
+-->

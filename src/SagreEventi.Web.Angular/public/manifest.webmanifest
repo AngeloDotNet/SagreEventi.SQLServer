@@ -1,0 +1,11 @@
+{
+  "name": "Sagre & Eventi",
+  "short_name": "Sagre",
+  "description": "Sagre, feste e festival enogastronomici segnalati dagli utenti",
+  "lang": "it",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#99213f",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

@@ -416,3 +416,12 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Angular exclude
+**/dist
+**/out-tsc
+**/node_modules
+**/.angular
+**/.vscode/*
+**/npm-debug.log
+**/.DS_Store

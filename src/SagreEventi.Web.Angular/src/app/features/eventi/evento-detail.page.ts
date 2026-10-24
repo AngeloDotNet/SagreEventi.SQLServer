@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { RouterLink } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { EventiStore } from '../../core/eventi-store.service';
@@ -9,7 +9,6 @@ import {
   durataGiorni,
   formatDataLunga,
   formatPeriodo,
-  statoEvento,
   statoLabel,
   statoSeverity,
   TagSeverity,
@@ -36,6 +35,9 @@ import { EmptyState } from '../../shared/empty-state';
           <div class="dettaglio-principale">
             <div class="ev-top">
               <p-tag [value]="label()" [severity]="severity()" [rounded]="true" />
+              @if (e.stato === 'InAttesa' || e.stato === 'Rifiutato') {
+                <span class="ev-pending"><i class="pi pi-clock" aria-hidden="true"></i> In attesa di approvazione: per ora la vedi solo tu</span>
+              }
               @if (e.dirty) {
                 <span class="ev-pending"><i class="pi pi-cloud-upload" aria-hidden="true"></i> In attesa di invio al server</span>
               }
@@ -72,7 +74,6 @@ import { EmptyState } from '../../shared/empty-state';
               <a [routerLink]="['/eventi', e.id, 'modifica']" class="btn btn-contorno btn-pieno">
                 <i class="pi pi-pencil" aria-hidden="true"></i>Modifica
               </a>
-              <p-button label="Segna come concluso" icon="pi pi-check" severity="secondary" [text]="true" (onClick)="chiediConclusione()" />
             }
           </aside>
         </div>
@@ -82,7 +83,7 @@ import { EmptyState } from '../../shared/empty-state';
         <app-empty-state
           icona="🧭"
           titolo="Evento non trovato"
-          testo="Potrebbe essere stato concluso oppure non è ancora stato scaricato su questo dispositivo. Prova a sincronizzare."
+          testo="Potrebbe essere già concluso oppure non è ancora stato scaricato su questo dispositivo. Prova a sincronizzare."
         >
           <button type="button" class="btn btn-primario" [disabled]="store.sincronizzando()" (click)="store.sincronizza()">Sincronizza ora</button>
           <a routerLink="/eventi" class="btn btn-contorno">Vai a tutti gli eventi</a>
@@ -97,9 +98,7 @@ export class EventoDetailPage {
 
   protected readonly store = inject(EventiStore);
   protected readonly permessi = inject(PermessiService);
-  private readonly router = inject(Router);
   private readonly messaggi = inject(MessageService);
-  private readonly conferme = inject(ConfirmationService);
 
   protected readonly evento = computed(() => this.store.trova(this.id()));
   protected readonly visual = computed(() => {
@@ -156,27 +155,5 @@ export class EventoDetailPage {
     } catch {
       // condivisione annullata dall'utente o non consentita
     }
-  }
-
-  protected chiediConclusione(): void {
-    const e = this.evento();
-    if (!e || !this.permessi.puoModificare()) return;
-    const stato = statoEvento(e);
-    this.conferme.confirm({
-      header: 'Segnare come concluso?',
-      message:
-        stato === 'terminato'
-          ? `«${e.nomeEvento}» è già finito. Segnandolo come concluso sparisce dall'elenco.`
-          : `«${e.nomeEvento}» non è ancora finito. Segnandolo come concluso sparisce dall'elenco per tutti.`,
-      icon: 'pi pi-check-circle',
-      acceptLabel: 'Segna come concluso',
-      rejectLabel: 'Annulla',
-      accept: () => {
-        this.store.concludi(e.id);
-        void this.store.sincronizza();
-        this.messaggi.add({ severity: 'success', summary: 'Evento concluso', detail: 'Non compare più nell\'elenco.', life: 4000 });
-        void this.router.navigate(['/eventi']);
-      },
-    });
   }
 }

@@ -14,7 +14,7 @@ import { Festone } from '../../shared/festone';
   template: `
     <section class="hero">
       <div class="container">
-        <h1 class="hero-titolo">Sagre e feste enogastronomiche, segnalate da chi ci va.</h1>
+        <h1 class="hero-titolo">Sagre e feste enogastronomiche.</h1>
         <p class="hero-testo">{{ riepilogo() }}</p>
         <div class="hero-azioni">
           <a routerLink="/eventi" class="btn btn-primario btn-grande">Guarda tutti gli eventi</a>

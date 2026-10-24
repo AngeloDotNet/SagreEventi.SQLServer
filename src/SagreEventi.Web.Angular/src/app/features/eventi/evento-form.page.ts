@@ -18,6 +18,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { EventiStore } from '../../core/eventi-store.service';
 import { parseLocalDate, startOfToday, toDateOnlyIso } from '../../core/evento-utils';
 import { EventoDraft } from '../../core/models';
+import { PermessiService } from '../../core/permessi.service';
 import { EmptyState } from '../../shared/empty-state';
 
 type CampoForm = 'nomeEvento' | 'cittaEvento' | 'dataInizioEvento' | 'dataFineEvento' | 'descrizioneEvento';
@@ -120,6 +121,7 @@ export class EventoFormPage implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly router = inject(Router);
   private readonly messaggi = inject(MessageService);
+  private readonly permessi = inject(PermessiService);
 
   protected readonly nonTrovato = signal(false);
 
@@ -156,7 +158,7 @@ export class EventoFormPage implements OnInit {
     });
   }
 
-  /** Messaggio di errore del campo, allineato alle regole di FluentValidation del client Blazor. */
+  /** Messaggio di errore del campo. */
   protected errore(nome: CampoForm): string | null {
     const c = this.form.controls[nome];
     if (!c.invalid || !(c.touched || c.dirty)) return null;
@@ -200,11 +202,14 @@ export class EventoFormPage implements OnInit {
       destinazione = this.store.crea(draft).id;
     }
 
+    const inRevisione = !id && !this.permessi.puoModificare();
     this.messaggi.add({
       severity: 'success',
-      summary: id ? 'Modifiche salvate' : 'Evento segnalato',
-      detail: this.store.online() ? 'Lo sto inviando al server.' : 'Sei offline: partirà appena torni online.',
-      life: 4000,
+      summary: id ? 'Modifiche salvate' : inRevisione ? 'Segnalazione ricevuta' : 'Evento segnalato',
+      detail: inRevisione
+        ? 'Sarà visibile a tutti dopo la revisione. Lo trovi in «Le mie segnalazioni».'
+        : this.store.online() ? 'Lo sto inviando al server.' : 'Sei offline: partirà appena torni online.',
+      life: inRevisione ? 7000 : 4000,
     });
     void this.store.sincronizza();
     void this.router.navigate(['/eventi', destinazione]);

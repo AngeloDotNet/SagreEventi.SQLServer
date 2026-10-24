@@ -1,14 +1,14 @@
 import { Injectable, computed, signal } from '@angular/core';
 
 export interface AppConfig {
-  /** URL base dell'API (es. `https://api.example.com`). Vuoto = stessa origine, utile con il proxy di sviluppo. */
+  /** URL base dell'API (es. `https://api.example.com`). Vuoto = stessa origine (default): è il caso dietro nginx, che serve il frontend e inoltra `/api` al backend, e con il proxy di sviluppo. */
   apiBaseUrl: string;
 }
 
 /** Legge `config.json` all'avvio, così l'URL dell'API si cambia senza ricompilare. */
 @Injectable({ providedIn: 'root' })
 export class ConfigService {
-  private readonly config = signal<AppConfig>({ apiBaseUrl: 'https://localhost:5001' });
+  private readonly config = signal<AppConfig>({ apiBaseUrl: '' });
   readonly apiBaseUrl = computed(() => this.config().apiBaseUrl.replace(/\/+$/, ''));
 
   async load(): Promise<void> {

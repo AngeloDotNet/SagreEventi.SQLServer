@@ -4,15 +4,19 @@ import { firstValueFrom } from 'rxjs';
 import { EventiApiService } from './eventi-api.service';
 import { confrontaPerInizio, nuovoId, parseUtc, toApiPayload } from './evento-utils';
 import { PermessiService } from './permessi.service';
-import { Evento, EventoDraft, EventoLocale, StoreSnapshot } from './models';
+import { EsitoModerazione, Evento, EventoDraft, EventoLocale, StoreSnapshot } from './models';
 
 const STORAGE_KEY = 'sagreeventi.store.v1';
-/** Stesso valore usato dal client Blazor alla prima sincronizzazione (DateTime.MinValue). */
+/** Cursore della prima sincronizzazione. */
 const SINCE_INIZIALE = '2020-01-01T00:00:00';
+/** Allineato a `Eventi:MaxPerRichiesta` del server (appsettings.json). */
+const MAX_EVENTI_PER_RICHIESTA = 20;
+/** Allineato al limite di `GET api/Eventi/GetStati` del server. */
+const MAX_ID_STATI = 50;
 
 /**
  * Store offline-first: gli eventi vivono in localStorage e si sincronizzano con il server
- * con lo stesso protocollo del client Blazor (push dei modificati, poi pull da `since`).
+ * con il protocollo push dei modificati, poi pull da `since`.
  */
 @Injectable({ providedIn: 'root' })
 export class EventiStore {
@@ -27,8 +31,12 @@ export class EventiStore {
   readonly erroreSync = signal<string | null>(null);
   readonly online = signal(typeof navigator === 'undefined' ? true : navigator.onLine);
 
-  /** Eventi visibili: esclude quelli segnati come conclusi. Ordinati per data di inizio. */
-  readonly eventi = computed(() => this.tutti().filter((e) => !e.eventoConcluso).sort(confrontaPerInizio));
+  /** Eventi pubblici: esclude i conclusi e quelli non approvati (in attesa o rifiutati). Ordinati per data di inizio. */
+  readonly eventi = computed(() => this.tutti().filter((e) => !e.eventoConcluso && eApprovato(e)).sort(confrontaPerInizio));
+  /** Segnalazioni di questo dispositivo non ancora pubbliche. Un rifiuto non è comunicato: per chi segnala restano "in attesa". */
+  readonly mieSegnalazioni = computed(() =>
+    this.tutti().filter((e) => e.mio && !e.eventoConcluso && !eApprovato(e)).sort(confrontaPerInizio),
+  );
   readonly daInviare = computed(() => this.tutti().filter((e) => e.dirty).length);
   readonly citta = computed(() =>
     [...new Set(this.eventi().map((e) => e.cittaEvento.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it')),
@@ -71,6 +79,9 @@ export class EventiStore {
       eventoConcluso: false,
       dataOraUltimaModifica: new Date().toISOString(),
       dirty: true,
+      mio: true,
+      // Chi può modificare pubblica subito, gli altri passano dalla revisione (lo decide il server: qui è solo l'anteprima)
+      stato: this.permessi.puoModificare() ? 'Approvato' : 'InAttesa',
     };
     this.tutti.update((list) => [...list, evento]);
     return evento;
@@ -79,15 +90,7 @@ export class EventiStore {
   aggiorna(id: string, draft: EventoDraft): void {
     if (!this.permessi.puoModificare()) return;
     this.tutti.update((list) =>
-      list.map((e) => (e.id === id ? { ...e, ...draft, dataOraUltimaModifica: new Date().toISOString(), dirty: true } : e)),
-    );
-  }
-
-  /** L'API non prevede la cancellazione: un evento si toglie dall'elenco segnandolo come concluso. */
-  concludi(id: string): void {
-    if (!this.permessi.puoModificare()) return;
-    this.tutti.update((list) =>
-      list.map((e) => (e.id === id ? { ...e, eventoConcluso: true, dataOraUltimaModifica: new Date().toISOString(), dirty: true } : e)),
+      list.map((e) => (e.id === id ? { ...e, ...draft, dataOraUltimaModifica: new Date().toISOString(), dirty: true, protetta: true } : e)),
     );
   }
 
@@ -98,14 +101,19 @@ export class EventiStore {
 
     try {
       // 1. Push: invia gli eventi modificati in locale.
-      const daInviare = this.tutti().filter((e) => e.dirty);
+      // Senza il ruolo le modifiche protette restano in attesa: il server le ignorerebbe e andrebbero perse.
+      const puoModificare = this.permessi.puoModificare();
+      const daInviare = this.tutti().filter((e) => e.dirty && (!e.protetta || puoModificare));
       if (daInviare.length > 0) {
-        await firstValueFrom(this.api.updateEventi(daInviare.map(toApiPayload)));
+        // Il server accetta al massimo MAX_EVENTI_PER_RICHIESTA eventi per chiamata
+        for (let i = 0; i < daInviare.length; i += MAX_EVENTI_PER_RICHIESTA) {
+          await firstValueFrom(this.api.updateEventi(daInviare.slice(i, i + MAX_EVENTI_PER_RICHIESTA).map(toApiPayload)));
+        }
         const inviati = new Map(daInviare.map((e) => [e.id, e.dataOraUltimaModifica]));
         this.tutti.update((list) =>
           list
             // Se l'utente ha modificato l'evento durante l'invio, il timestamp è cambiato e resta da inviare.
-            .map((e) => (inviati.get(e.id) === e.dataOraUltimaModifica ? { ...e, dirty: false } : e))
+            .map((e) => (inviati.get(e.id) === e.dataOraUltimaModifica ? { ...e, dirty: false, protetta: false } : e))
             // Gli eventi conclusi e già inviati non servono più in locale.
             .filter((e) => !(e.eventoConcluso && !e.dirty)),
         );
@@ -114,6 +122,7 @@ export class EventiStore {
       // 2. Pull: scarica le modifiche del server successive al cursore.
       const remoti = await firstValueFrom(this.api.getEventi(this.cursore() ?? SINCE_INIZIALE));
       this.unisci(remoti ?? []);
+      await this.aggiornaStati();
       this.ultimaSincronizzazione.set(new Date().toISOString());
       return true;
     } catch (err) {
@@ -121,6 +130,29 @@ export class EventiStore {
       return false;
     } finally {
       this.sincronizzando.set(false);
+    }
+  }
+
+  /** Chiede al server l'esito delle mie segnalazioni non ancora approvate. Un errore qui non fa fallire la sincronizzazione. */
+  private async aggiornaStati(): Promise<void> {
+    const ids = this.tutti()
+      .filter((e) => e.mio && !e.dirty && !eApprovato(e))
+      .map((e) => e.id);
+    if (ids.length === 0) return;
+
+    try {
+      const esiti = new Map<string, EsitoModerazione>();
+      for (let i = 0; i < ids.length; i += MAX_ID_STATI) {
+        for (const s of await firstValueFrom(this.api.getStati(ids.slice(i, i + MAX_ID_STATI)))) esiti.set(s.id, s);
+      }
+      this.tutti.update((list) =>
+        list.map((e) => {
+          const s = esiti.get(e.id);
+          return s && e.mio ? { ...e, stato: s.stato } : e;
+        }),
+      );
+    } catch {
+      // Gli esiti si riprovano alla prossima sincronizzazione.
     }
   }
 
@@ -135,7 +167,7 @@ export class EventiStore {
       if (r.eventoConcluso) {
         locali.delete(r.id);
       } else if (!l || !l.dirty || parseUtc(r.dataOraUltimaModifica) >= parseUtc(l.dataOraUltimaModifica)) {
-        locali.set(r.id, normalizza(r));
+        locali.set(r.id, { ...normalizza(r), mio: l?.mio });
       }
       if (!cursore || parseUtc(r.dataOraUltimaModifica) > parseUtc(cursore)) {
         cursore = r.dataOraUltimaModifica;
@@ -170,8 +202,14 @@ function normalizza(r: Evento): EventoLocale {
     descrizioneEvento: r.descrizioneEvento ?? '',
     eventoConcluso: !!r.eventoConcluso,
     dataOraUltimaModifica: r.dataOraUltimaModifica,
+    stato: r.stato,
     dirty: false,
   };
+}
+
+/** Un evento senza stato arriva da versioni precedenti all'introduzione della moderazione ed è considerato pubblico. */
+function eApprovato(e: EventoLocale): boolean {
+  return !e.stato || e.stato === 'Approvato';
 }
 
 function descriviErrore(err: unknown): string {

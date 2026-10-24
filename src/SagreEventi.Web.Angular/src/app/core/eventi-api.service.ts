@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ConfigService } from './config.service';
-import { Evento } from './models';
+import { EsitoModerazione, Evento } from './models';
 
 /** Client dei due endpoint esposti da `EventiController` (route `api/Eventi/{action}`). */
 @Injectable({ providedIn: 'root' })
@@ -17,6 +17,11 @@ export class EventiApiService {
   /** GET api/Eventi/GetEventi?since=... → eventi modificati dopo `since`. */
   getEventi(since: string): Observable<Evento[]> {
     return this.http.get<Evento[]>(this.url('GetEventi'), { params: { since } });
+  }
+
+  /** GET api/Eventi/GetStati?ids=... → esito della moderazione degli eventi segnalati (anonimo, max 50 id). */
+  getStati(ids: string[]): Observable<EsitoModerazione[]> {
+    return this.http.get<EsitoModerazione[]>(this.url('GetStati'), { params: { ids } });
   }
 
   /** PUT api/Eventi/UpdateEventi → inserisce i nuovi eventi e aggiorna quelli più recenti sul server. */

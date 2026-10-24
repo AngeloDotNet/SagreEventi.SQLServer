@@ -1,9 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, untracked } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
+import { AuthService } from './core/auth.service';
 import { EventiStore } from './core/eventi-store.service';
+import { PermessiService } from './core/permessi.service';
+import { RevisioneService } from './core/revisione.service';
 import { ThemeService } from './core/theme.service';
 import { SyncStatus } from './shared/sync-status';
 
@@ -27,7 +30,7 @@ import { SyncStatus } from './shared/sync-status';
         </a>
 
         <nav class="nav-desktop" aria-label="Principale">
-          @for (l of link; track l.path) {
+          @for (l of link(); track l.path) {
             <a [routerLink]="l.path" routerLinkActive="attivo" [routerLinkActiveOptions]="{ exact: l.esatto }" class="nav-link">
               <i [class]="'pi ' + l.icona" aria-hidden="true"></i>{{ l.etichetta }}
             </a>
@@ -44,6 +47,18 @@ import { SyncStatus } from './shared/sync-status';
             [ariaLabel]="theme.scuro() ? 'Passa al tema chiaro' : 'Passa al tema scuro'"
             (onClick)="theme.alterna()"
           />
+          @if (auth.autenticato()) {
+            <p-button
+              icon="pi pi-sign-out"
+              [rounded]="true"
+              [text]="true"
+              severity="secondary"
+              [ariaLabel]="'Esci (' + auth.email() + ')'"
+              (onClick)="esci()"
+            />
+          } @else {
+            <a routerLink="/login" class="btn btn-testo" aria-label="Accedi"><i class="pi pi-sign-in" aria-hidden="true"></i>Accedi</a>
+          }
           <a routerLink="/eventi/nuovo" class="btn btn-primario cta-desktop"><i class="pi pi-plus" aria-hidden="true"></i>Segnala</a>
         </div>
       </div>
@@ -61,13 +76,13 @@ import { SyncStatus } from './shared/sync-status';
         </p>
         <p>
           Open source con licenza MIT.
-          <a href="https://github.com/AngeloDotNet/SagreEventi.SQLServer" target="_blank" rel="noopener">Sorgente</a>
+          <a href="https://github.com/AngeloDotNet/SagreEventi.SQLServer" target="_blank" rel="noopener">Codice sorgente</a>
         </p>
       </div>
     </footer>
 
     <nav class="nav-mobile" aria-label="Principale">
-      @for (l of link; track l.path) {
+      @for (l of link(); track l.path) {
         <a [routerLink]="l.path" routerLinkActive="attivo" [routerLinkActiveOptions]="{ exact: l.esatto }">
           <i [class]="'pi ' + l.icona" aria-hidden="true"></i><span>{{ l.etichetta }}</span>
         </a>
@@ -83,15 +98,45 @@ import { SyncStatus } from './shared/sync-status';
 })
 export class App {
   protected readonly theme = inject(ThemeService);
-  private readonly store = inject(EventiStore);
+  protected readonly auth = inject(AuthService);
+  protected readonly store = inject(EventiStore);
+  private readonly router = inject(Router);
+  private readonly permessi = inject(PermessiService);
+  private readonly revisione = inject(RevisioneService);
 
-  protected readonly link = [
+  protected readonly link = computed(() => [
     { path: '/', etichetta: 'Home', icona: 'pi-home', esatto: true },
     { path: '/eventi', etichetta: 'Eventi', icona: 'pi-th-large', esatto: false },
     { path: '/agenda', etichetta: 'Agenda', icona: 'pi-calendar', esatto: false },
-  ];
+    ...(this.store.mieSegnalazioni().length > 0
+      ? [{ path: '/segnalazioni', etichetta: 'Le mie', icona: 'pi-inbox', esatto: false }]
+      : []),
+    ...(this.permessi.modificaConsentita()
+      ? [{ path: '/gestione', etichetta: this.etichettaGestione(), icona: 'pi-cog', esatto: false }]
+      : []),
+  ]);
 
   constructor() {
     if (this.store.online()) void this.store.sincronizza();
+
+    // Contatore delle segnalazioni da rivedere: solo per chi può revisionare e solo online
+    effect(() => {
+      const abilitato = this.permessi.modificaConsentita();
+      const online = this.store.online();
+      untracked(() => {
+        if (!abilitato) this.revisione.azzera();
+        else if (online) void this.revisione.aggiornaConteggio();
+      });
+    });
+  }
+
+  private etichettaGestione(): string {
+    const n = this.revisione.inAttesa();
+    return n ? `Gestione (${n})` : 'Gestione';
+  }
+
+  protected esci(): void {
+    this.auth.logout();
+    void this.router.navigateByUrl('/');
   }
 }

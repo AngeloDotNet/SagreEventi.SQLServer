@@ -233,7 +233,7 @@ main { min-height: calc(100vh - var(--altezza-topbar) - 140px); padding-bottom: 
   line-height: 1.02;
   max-width: 17ch;
 }
-.hero-testo { margin-top: 1.25rem; font-size: 1.15rem; color: var(--ink-soft); max-width: 46ch; }
+.hero-testo { margin-top: 1.25rem; font-size: 1.15rem; color: var(--ink-soft); }
 .hero-azioni { margin-top: 1.75rem; display: flex; flex-wrap: wrap; gap: 0.75rem; }
 
 .hero-festone { margin-top: 2.5rem; overflow-x: auto; padding: 0 1rem 1.5rem; scroll-snap-type: x proximity; scrollbar-width: thin; }
@@ -297,6 +297,7 @@ main { min-height: calc(100vh - var(--altezza-topbar) - 140px); padding-bottom: 
 .pagina-stretta { max-width: 760px; }
 .pagina-testa { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
 .pagina-intro { color: var(--ink-soft); margin: 0.5rem 0 1.75rem; max-width: 60ch; }
+.pagina-intro.larga { max-width: none; }
 
 /* ---------- Griglia e card evento ---------- */
 .griglia-eventi { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fill, minmax(17.5rem, 1fr)); }

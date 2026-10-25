@@ -221,7 +221,6 @@ docker-compose.yml               SQL Server + API + web + nginx proxy
 .env.example                     Variables of the compose file (copy to .env)
 deploy/nginx/                    Dedicated nginx reverse proxy (Dockerfile, template)
 tests/                           API integration tests (xUnit, in-memory SQLite)
-PLAN-*.md                        Plans of the backend migration and of the moderation
 TEST-MANUALI.md                  Manual checks still to do (Docker, HTTPS, proxy limits)
 CHANGES.md                       Log of the changes, newest first
 src/

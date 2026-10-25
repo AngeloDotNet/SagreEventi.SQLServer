@@ -1,6 +1,6 @@
 # Attività sospese
 
-Piani `PLAN-migrazione-backend.md` (step 0-9) e `PLAN-moderazione-eventi.md` (M1-M6) completati nel codice. Restano solo verifiche e azioni manuali. Aggiornato il 2026-10-25.
+I piani di migrazione del backend (step 0-9) e di moderazione (M1-M6) sono completati nel codice e i relativi file sono stati rimossi (il dettaglio è in `CHANGES.md`). Restano solo verifiche e azioni manuali. Aggiornato il 2026-10-25.
 
 ## Da provare a mano
 

@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+artifacts/
+**/node_modules/
+**/dist/
+**/.angular/
+.git/
+.vs/
+*.env
+**/appsettings.local.json
+deploy/certs/

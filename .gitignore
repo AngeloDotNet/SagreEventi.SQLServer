@@ -417,7 +417,10 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-# Angular exclude
+# .NET exclusions
+**/appsettings.local.json
+
+# Angular exclusions
 **/dist
 **/out-tsc
 **/node_modules
@@ -425,3 +428,6 @@ FodyWeavers.xsd
 **/.vscode/*
 **/npm-debug.log
 **/.DS_Store
+# Docker: TLS certificates and secrets
+deploy/certs/
+.env

@@ -1,0 +1,78 @@
+# SagreEventi: SQL Server + API + web (static Angular) + proxy (dedicated nginx, the only public entry point).
+# Development / trial stack. Secrets come from the .env file (not versioned, see .env.example).
+#   docker compose up --build
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD:?imposta SQL_SA_PASSWORD nel file .env}
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [interna]
+
+  api:
+    build:
+      context: .
+      dockerfile: src/SagreEventi.Web.Server/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: "Server=sqlserver;Database=SagreEventi;User Id=sa;Password=${SQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+      Database__MigraAllAvvio: "true"
+      Identity__Admin__Email: ${ADMIN_EMAIL:?imposta ADMIN_EMAIL nel file .env}
+      Identity__Admin__Password: ${ADMIN_PASSWORD:?imposta ADMIN_PASSWORD nel file .env}
+      # The sample Editor in appsettings.json is not created outside Development with its sample password: set a real one or leave it out
+      Identity__Editor__Email: ${EDITOR_EMAIL:-}
+      Identity__Editor__Password: ${EDITOR_PASSWORD:-}
+      # Only the host name served by nginx is accepted (Host header)
+      AllowedHosts: ${SERVER_NAME:?imposta SERVER_NAME nel file .env}
+      # Same origin behind nginx: no CORS origins in production
+      Cors__Origins__0: ""
+      # Trust X-Forwarded-For / X-Forwarded-Proto only from the Docker network below
+      ForwardedHeaders__KnownNetworks__0: 172.28.0.0/24
+    # No published port: the API is reachable only through the proxy
+    expose: ["8080"]
+    restart: unless-stopped
+    networks: [interna]
+
+  web:
+    build:
+      context: src/SagreEventi.Web.Angular
+    restart: unless-stopped
+    networks: [interna]
+
+  proxy:
+    build:
+      context: deploy/nginx
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    environment:
+      SERVER_NAME: ${SERVER_NAME}
+    volumes:
+      # fullchain.pem and privkey.pem (see README / .env.example for a self-signed certificate)
+      - ./deploy/certs:/etc/nginx/certs:ro
+    ports:
+      - "${HTTP_PORT:-80}:8080"
+      - "${HTTPS_PORT:-443}:8443"
+    restart: unless-stopped
+    networks: [interna]
+
+networks:
+  interna:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+volumes:
+  sqldata:

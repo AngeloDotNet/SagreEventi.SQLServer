@@ -4,7 +4,7 @@ namespace SagreEventi.Web.Server.Options;
 
 public class FusionCacheOptions
 {
-    public FusionCacheEntryOptions DefaultEntryOptions { get; set; }
+    public FusionCacheEntryOptions DefaultEntryOptions { get; set; } = new();
 }
 
 public class FusionCacheEntryOptions

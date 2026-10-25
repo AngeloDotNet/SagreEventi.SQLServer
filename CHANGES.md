@@ -3,6 +3,14 @@
 Riassunto compatto delle modifiche fatte con Claude, così non serve rileggere i file per ricostruire il contesto.
 Ordine: più recente in alto. Una voce per intervento: cosa, dove (file), perché.
 
+## 2026-10-25 — Commit del lavoro e rimozione dei file di piano
+
+**Perché:** richiesta dell'utente: committare in più commit per area (push e PR a cura dell'utente) e togliere i piani, ormai completati.
+
+**Cosa:** 8 commit su `main`: rimozione Blazor, OpenAPI nativo, entità e moderazione, Identity, endpoint Minimal API, Docker, documentazione, rimozione dei piani. Eliminati `PLAN-migrazione-backend.md` e `PLAN-moderazione-eventi.md`; tolti i riferimenti da `SagreEventi.sln`, `README.md` (struttura) e `SOSPESI.md`. Il dettaglio dei piani resta in questo file e in git (commit `55e9cea` e precedenti).
+
+**Note:** i commit intermedi probabilmente non compilano da soli (codice intrecciato); lo stato finale sì. `CLAUDE.md` chiede ancora di salvare i piani in `PLAN-<nome>.md`: la regola vale per i piani futuri. Nessun push.
+
 ## 2026-10-25 — Nuovo SOSPESI.md
 
 **Perché:** richiesta dell'utente: salvare in un file dedicato ciò che resta sospeso dopo i piani.

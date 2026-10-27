@@ -5,20 +5,8 @@
 **A place to keep track of food and wine festivals, reported by the people who go to them.** 
 
 [Overview](#overview) | [Features](#features) | [Architecture](#architecture) | [Getting started](#getting-started) | [Development](#development) | [Deployment](#deployment)
-</div>
 
-<!-- ![SagreEventi: food and wine festivals and events, even offline](https://github.com/user-attachments/assets/fb40ab9d-c22d-4a14-a502-4695bae963e2) -->
-<img width="1000" height="420" alt="sagreeventi-devto-cover" src="https://github.com/user-attachments/assets/60d19983-03f0-4d17-ab83-32194877d1f6" />
-
-<p><div align="center">
-    
-![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
-![.NET 10](https://img.shields.io/badge/.NET-10-512bd4?style=flat-square)
-![Angular 21](https://img.shields.io/badge/Angular-21-dd0031?style=flat-square)
-![PrimeNG 21](https://img.shields.io/badge/PrimeNG-21-6366f1?style=flat-square)
-![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-a91d22?style=flat-square)
-
-</div></p>
+<img width="1000" height="420" alt="sagreeventi-devto-cover" src="https://github.com/user-attachments/assets/60d19983-03f0-4d17-ab83-32194877d1f6" /></div>
 
 ## Overview
 

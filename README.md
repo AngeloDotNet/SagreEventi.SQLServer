@@ -1,11 +1,13 @@
 # Food and wine festivals and events
 
+*Sagre ed eventi enogastronomici: a place to keep track of food and wine festivals reported by the people who go to them.*
+
+<img width="1000" height="420" alt="sagreeventi-cover" src="https://github.com/user-attachments/assets/fb40ab9d-c22d-4a14-a502-4695bae963e2" />
+
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512bd4?style=flat-square)
 ![Angular 21](https://img.shields.io/badge/Angular-21-dd0031?style=flat-square)
 ![PrimeNG 21](https://img.shields.io/badge/PrimeNG-21-6366f1?style=flat-square)
-
-*Sagre ed eventi enogastronomici: a place to keep track of food and wine festivals reported by the people who go to them.*
 
 > [!NOTE]
 > The project has one ASP.NET Core API (API only, no hosted UI) and an **Angular + PrimeNG** client that talks to it. The original Blazor WebAssembly client has been removed. A `docker-compose.yml` runs the whole stack behind a dedicated nginx (see [Docker](#docker)).

@@ -1,0 +1,58 @@
+<section class="hero">
+  <div class="container">
+    <h1 class="hero-titolo">Sagre e feste enogastronomiche.</h1>
+    <p class="hero-testo">{{ riepilogo() }}</p>
+    <div class="hero-azioni">
+      <a routerLink="/eventi" class="btn btn-primario btn-grande">Guarda tutti gli eventi</a>
+      <a routerLink="/eventi/nuovo" class="btn btn-contorno btn-grande">Segnala un evento</a>
+    </div>
+  </div>
+
+  @if (prossimi().length > 0) {
+    <div class="hero-festone"><app-festone [eventi]="prossimi()" /></div>
+  }
+</section>
+
+<section class="container sezione">
+  <div class="sezione-testa">
+    <h2>In corso e in arrivo</h2>
+    @if (inProgramma().length > 6) {
+      <a routerLink="/eventi" class="link-forte">Vedi tutti i {{ inProgramma().length }} eventi</a>
+    }
+  </div>
+
+  @if (store.sincronizzando() && store.eventi().length === 0) {
+    <div class="griglia-eventi">
+      @for (n of scheletri; track n) {
+        <p-skeleton height="21rem" borderRadius="18px" />
+      }
+    </div>
+  } @else if (inProgramma().length === 0) {
+    <app-empty-state
+      icona="🎪"
+      titolo="Nessun evento in programma"
+      testo="Qui compaiono le sagre in corso e quelle dei prossimi giorni. Conosci una festa che manca? Segnalala: ci vogliono un minuto."
+    />
+  } @else {
+    <div class="griglia-eventi">
+      @for (e of inProgramma().slice(0, 6); track e.id) {
+        <app-evento-card [evento]="e" />
+      }
+    </div>
+  }
+</section>
+
+<section class="container sezione sezione-tre">
+  <article>
+    <h3>Cerca</h3>
+    <p>Filtra per città, per periodo o per parola chiave: «tartufo», «vendemmia», «porchetta».</p>
+  </article>
+  <article>
+    <h3>Segnala</h3>
+    <p>Hai trovato una sagra che non c'è? Aggiungila con date e descrizione. Non serve registrarsi.</p>
+  </article>
+  <article>
+    <h3>Usala anche offline</h3>
+    <p>Gli eventi restano sul tuo telefono. Le modifiche partono da sole quando torni online.</p>
+  </article>
+</section>

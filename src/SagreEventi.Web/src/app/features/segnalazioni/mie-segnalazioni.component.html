@@ -1,0 +1,29 @@
+<div class="container pagina pagina-stretta">
+  <h1>Le mie segnalazioni</h1>
+  <p class="pagina-intro">
+    Un evento segnalato diventa visibile a tutti dopo la revisione. Finché non è approvato lo vedi solo su questo dispositivo.
+  </p>
+
+  @if (store.mieSegnalazioni().length === 0) {
+    <app-empty-state icona="📬" titolo="Nessuna segnalazione in sospeso" testo="Le tue segnalazioni approvate compaiono tra gli eventi.">
+      <a routerLink="/eventi" class="btn btn-primario">Vai agli eventi</a>
+    </app-empty-state>
+  } @else {
+    <ul class="elenco-segnalazioni">
+      @for (e of store.mieSegnalazioni(); track e.id) {
+        <li class="segnalazione">
+          <div class="ev-top">
+            <p-tag value="In attesa di approvazione" severity="warn" [rounded]="true" />
+            @if (e.dirty) {
+              <span class="ev-pending"><i class="pi pi-cloud-upload" aria-hidden="true"></i> Da inviare al server</span>
+            }
+          </div>
+          <h2>
+            <a [routerLink]="['/eventi', e.id]">{{ e.nomeEvento }}</a>
+          </h2>
+          <p>{{ e.cittaEvento }} · {{ periodo(e) }}</p>
+        </li>
+      }
+    </ul>
+  }
+</div>

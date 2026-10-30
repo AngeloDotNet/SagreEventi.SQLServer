@@ -1,0 +1,19 @@
+<button
+  type="button"
+  class="sync"
+  [class.is-offline]="!store.online()"
+  [class.has-error]="!!store.erroreSync()"
+  [disabled]="store.sincronizzando()"
+  [attr.aria-label]="'Sincronizza ora. ' + breve() + '. ' + dettaglio()"
+  [attr.title]="breve() + ' · ' + dettaglio()"
+  (click)="store.sincronizza()"
+>
+  @if (store.online()) {
+    <i class="pi pi-sync" [class.spin]="store.sincronizzando()" aria-hidden="true"></i>
+  } @else {
+    <i class="pi pi-wifi sync-senza-rete" aria-hidden="true"></i>
+  }
+  @if (store.daInviare() > 0) {
+    <span class="sync-badge" aria-hidden="true">{{ store.daInviare() > 99 ? "99+" : store.daInviare() }}</span>
+  }
+</button>

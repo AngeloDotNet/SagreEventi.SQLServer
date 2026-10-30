@@ -1,0 +1,79 @@
+<a class="skip" href="#contenuto">Vai al contenuto</a>
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a routerLink="/" class="brand" aria-label="Sagre e Eventi, home">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M3 9h34" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+        <path d="M5 10h10l-5 17z" fill="#f5a524" />
+        <path d="M15 10h10l-5 17z" fill="currentColor" />
+        <path d="M25 10h10l-5 17z" fill="#2f7d4f" />
+      </svg>
+      <span class="brand-nome">Sagre &amp; Eventi</span>
+    </a>
+
+    <nav class="nav-desktop" aria-label="Principale">
+      @for (l of link(); track l.path) {
+        <a [routerLink]="l.path" routerLinkActive="attivo" [routerLinkActiveOptions]="{ exact: l.esatto }" class="nav-link">
+          <i [class]="'pi ' + l.icona" aria-hidden="true"></i>{{ l.etichetta }}
+        </a>
+      }
+    </nav>
+
+    <div class="topbar-azioni">
+      <a routerLink="/eventi/nuovo" class="btn btn-primario cta-desktop"><i class="pi pi-plus" aria-hidden="true"></i>Segnala</a>
+      <app-sync-status />
+      @if (aggiornamento.disponibile()) {
+        <button
+          type="button"
+          class="aggiornamento"
+          aria-label="Aggiornamento disponibile: clicca per aggiornare"
+          title="Aggiornamento disponibile: clicca per aggiornare"
+          (click)="aggiornamento.aggiorna()"
+        >
+          <i class="pi pi-download" aria-hidden="true"></i>
+        </button>
+      }
+      <span class="topbar-sep" aria-hidden="true"></span>
+      <p-button
+        [icon]="temaCorrente().icona"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        [ariaLabel]="'Cambia tema (attuale: ' + temaCorrente().etichetta + ')'"
+        aria-haspopup="menu"
+        (onClick)="menuTema.toggle($event)"
+      />
+      <p-menu #menuTema [model]="vociTema()" [popup]="true" appendTo="body" />
+      <p-button
+        class="menu-azioni"
+        icon="pi pi-ellipsis-v"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        ariaLabel="Menu"
+        aria-haspopup="menu"
+        (onClick)="menu.toggle($event)"
+      />
+      <p-menu #menu [model]="voci()" [popup]="true" appendTo="body" />
+    </div>
+  </div>
+</header>
+
+<main id="contenuto">
+  <router-outlet />
+</main>
+
+<nav class="nav-mobile" aria-label="Principale">
+  @for (l of link(); track l.path) {
+    <a [routerLink]="l.path" routerLinkActive="attivo" [routerLinkActiveOptions]="{ exact: l.esatto }">
+      <i [class]="'pi ' + l.icona" aria-hidden="true"></i><span>{{ l.etichetta }}</span>
+    </a>
+  }
+  <a routerLink="/eventi/nuovo" routerLinkActive="attivo" class="nav-mobile-plus">
+    <i class="pi pi-plus" aria-hidden="true"></i><span>Segnala</span>
+  </a>
+</nav>
+
+<p-toast position="bottom-right" />
+<p-confirmdialog />

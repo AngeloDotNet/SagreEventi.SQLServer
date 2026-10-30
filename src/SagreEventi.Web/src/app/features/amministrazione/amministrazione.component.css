@@ -1,0 +1,5 @@
+.azioni { display: flex; gap: 0.5rem; margin: 1rem 0; }
+.azioni-riga { text-align: right; white-space: nowrap; }
+.nessuno { opacity: 0.6; }
+.form { display: grid; gap: 1rem; }
+.campo { display: grid; gap: 0.35rem; }

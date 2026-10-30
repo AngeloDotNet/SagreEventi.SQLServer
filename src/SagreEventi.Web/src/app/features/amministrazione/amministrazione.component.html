@@ -1,0 +1,66 @@
+<div class="container pagina">
+  <h1>Amministrazione</h1>
+  <p class="pagina-intro larga">
+    Utenti che possono accedere. <strong>Editor</strong> modifica e rivede gli eventi, <strong>Admin</strong> fa lo stesso e gestisce anche gli utenti.
+    Non puoi cancellarti né toglierti il ruolo Admin.
+  </p>
+
+  @if (errore()) {
+    <p-message severity="error" styleClass="mt">{{ errore() }}</p-message>
+  }
+
+  <div class="azioni">
+    <p-button label="Nuovo utente" icon="pi pi-user-plus" (onClick)="apriNuovo()" />
+    <p-button icon="pi pi-refresh" severity="secondary" [text]="true" ariaLabel="Ricarica" [disabled]="caricamento()" (onClick)="carica()" />
+  </div>
+
+  <p-table [value]="utenti()" dataKey="id" [loading]="caricamento()" [scrollable]="true" [tableStyle]="{ 'min-width': '36rem' }">
+    <ng-template #header>
+      <tr>
+        <th>Email</th>
+        <th>Ruoli</th>
+        <th style="width: 8rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-u>
+      <tr>
+        <td>{{ u.email }} @if (eIo(u)) { <p-tag value="Tu" severity="info" [rounded]="true" /> }</td>
+        <td>
+          @for (r of u.ruoli; track r) {
+            <p-tag [value]="r" [severity]="r === 'Admin' ? 'danger' : 'secondary'" [rounded]="true" />
+          } @empty {
+            <span class="nessuno">Nessun ruolo</span>
+          }
+        </td>
+        <td class="azioni-riga">
+          <p-button icon="pi pi-pencil" [text]="true" severity="secondary" [ariaLabel]="'Modifica ' + u.email" (onClick)="apriModifica(u)" />
+          <p-button icon="pi pi-trash" [text]="true" severity="danger" [ariaLabel]="'Elimina ' + u.email" [disabled]="eIo(u)" (onClick)="chiediEliminazione(u)" />
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog [header]="inModifica() ? 'Modifica utente' : 'Nuovo utente'" [modal]="true" [(visible)]="dialogoAperto" [style]="{ width: 'min(30rem, 94vw)' }" [draggable]="false">
+  <div class="form">
+    <div class="campo">
+      <label for="u-email">Email</label>
+      <input pInputText id="u-email" type="email" autocomplete="off" maxlength="256" [ngModel]="email()" (ngModelChange)="email.set($event)" />
+    </div>
+    <div class="campo">
+      <label for="u-password">{{ inModifica() ? 'Nuova password (lascia vuoto per non cambiarla)' : 'Password' }}</label>
+      <p-password inputId="u-password" [feedback]="false" [toggleMask]="true" autocomplete="new-password" [ngModel]="password()" (ngModelChange)="password.set($event ?? '')" />
+    </div>
+    <div class="campo">
+      <label for="u-ruoli">Ruoli</label>
+      <p-multiselect inputId="u-ruoli" [options]="ruoliDisponibili()" [ngModel]="ruoliScelti()" (ngModelChange)="ruoliScelti.set($event ?? [])" placeholder="Nessun ruolo" [showToggleAll]="false" appendTo="body" />
+    </div>
+    @if (erroreDialogo()) {
+      <p-message severity="error" variant="simple" size="small">{{ erroreDialogo() }}</p-message>
+    }
+  </div>
+  <ng-template #footer>
+    <p-button label="Annulla" severity="secondary" [text]="true" (onClick)="dialogoAperto.set(false)" />
+    <p-button label="Salva" icon="pi pi-check" [loading]="occupato()" [disabled]="!email().trim() || (!inModifica() && !password())" (onClick)="salva()" />
+  </ng-template>
+</p-dialog>

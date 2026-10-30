@@ -1,0 +1,24 @@
+.blocchi {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.blocco {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--raggio);
+}
+
+.blocco h2 {
+  font-size: 1.25rem;
+}
+
+.blocco p {
+  color: var(--ink-soft);
+}

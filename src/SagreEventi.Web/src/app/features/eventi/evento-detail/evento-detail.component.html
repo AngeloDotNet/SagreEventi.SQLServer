@@ -1,0 +1,68 @@
+@if (evento(); as e) {
+  <article>
+    <div class="dettaglio-cover" [style.background]="visual().gradient">
+      <div class="container">
+        <a routerLink="/eventi" class="indietro"><i class="pi pi-arrow-left" aria-hidden="true"></i>Tutti gli eventi</a>
+        <span class="dettaglio-emoji" aria-hidden="true">{{ visual().emoji }}</span>
+      </div>
+    </div>
+
+    <div class="container dettaglio-corpo">
+      <div class="dettaglio-principale">
+        <div class="ev-top">
+          <p-tag [value]="label()" [severity]="severity()" [rounded]="true" />
+          @if (e.stato === 'InAttesa' || e.stato === 'Rifiutato') {
+            <span class="ev-pending"><i class="pi pi-clock" aria-hidden="true"></i> In attesa di approvazione: per ora la vedi solo tu</span>
+          }
+          @if (e.dirty) {
+            <span class="ev-pending"><i class="pi pi-cloud-upload" aria-hidden="true"></i> In attesa di invio al server</span>
+          }
+        </div>
+        <h1>{{ e.nomeEvento }}</h1>
+
+        <dl class="dettaglio-dati">
+          <div>
+            <dt>Dove</dt>
+            <dd>{{ e.cittaEvento }}</dd>
+          </div>
+          <div>
+            <dt>Quando</dt>
+            <dd>{{ periodo() }}</dd>
+          </div>
+          <div>
+            <dt>Durata</dt>
+            <dd>{{ durata() === 1 ? '1 giorno' : durata() + ' giorni' }}</dd>
+          </div>
+        </dl>
+
+        <p class="dettaglio-descrizione">{{ e.descrizioneEvento }}</p>
+        <p class="dettaglio-nota">Dal {{ inizioLungo() }} al {{ fineLunga() }}.</p>
+      </div>
+
+      <aside class="dettaglio-azioni" aria-label="Azioni">
+        <p-button label="Aggiungi al calendario" icon="pi pi-calendar-plus" (onClick)="aggiungiAlCalendario()" />
+        <a class="btn btn-contorno btn-pieno" [href]="urlMappa()" target="_blank" rel="noopener">
+          <i class="pi pi-map-marker" aria-hidden="true"></i>Apri la mappa
+        </a>
+        <p-button label="Condividi" icon="pi pi-share-alt" severity="secondary" [outlined]="true" (onClick)="condividi()" />
+        @if (permessi.puoModificare()) {
+          <hr />
+          <a [routerLink]="['/eventi', e.id, 'modifica']" class="btn btn-contorno btn-pieno">
+            <i class="pi pi-pencil" aria-hidden="true"></i>Modifica
+          </a>
+        }
+      </aside>
+    </div>
+  </article>
+} @else {
+  <div class="container pagina">
+    <app-empty-state
+      icona="🧭"
+      titolo="Evento non trovato"
+      testo="Potrebbe essere già concluso oppure non è ancora stato scaricato su questo dispositivo. Prova a sincronizzare."
+    >
+      <button type="button" class="btn btn-primario" [disabled]="store.sincronizzando()" (click)="store.sincronizza()">Sincronizza ora</button>
+      <a routerLink="/eventi" class="btn btn-contorno">Vai a tutti gli eventi</a>
+    </app-empty-state>
+  </div>
+}

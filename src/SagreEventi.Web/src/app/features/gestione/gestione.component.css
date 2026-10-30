@@ -1,0 +1,5 @@
+.schede {
+  display: flex;
+  gap: 0.25rem;
+  padding-top: 1rem;
+}

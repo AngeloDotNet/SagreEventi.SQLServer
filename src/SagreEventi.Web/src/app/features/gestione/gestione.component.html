@@ -1,0 +1,13 @@
+<div class="container">
+  <nav class="schede" aria-label="Gestione">
+    <a routerLink="revisione" routerLinkActive="attivo" class="nav-link">
+      <i class="pi pi-check-square" aria-hidden="true"></i>{{ etichettaRevisione() }}
+    </a>
+    @if (permessi.eAdmin()) {
+      <a routerLink="utenti" routerLinkActive="attivo" class="nav-link">
+        <i class="pi pi-users" aria-hidden="true"></i>Utenti
+      </a>
+    }
+  </nav>
+</div>
+<router-outlet />

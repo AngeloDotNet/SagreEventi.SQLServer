@@ -1,0 +1,20 @@
+<div class="festone" role="list" aria-label="Prossimi eventi">
+  <div class="festone-corda" aria-hidden="true"></div>
+  @for (e of eventi(); track e.id; let i = $index) {
+    <a
+      role="listitem"
+      class="bandierina"
+      [attr.data-c]="i % 4"
+      [style.--i]="i"
+      [routerLink]="['/eventi', e.id]"
+      [attr.title]="e.nomeEvento + ' – ' + e.cittaEvento"
+      [attr.aria-label]="e.nomeEvento + ', ' + e.cittaEvento + ', ' + periodo(e)"
+    >
+      <span class="bandierina-data">
+        <strong>{{ data(e).giorno }}</strong>
+        <span>{{ data(e).mese }}</span>
+      </span>
+      <span class="bandierina-emoji" aria-hidden="true">{{ emoji(e) }}</span>
+    </a>
+  }
+</div>

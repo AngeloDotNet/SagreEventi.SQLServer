@@ -422,12 +422,12 @@ FodyWeavers.xsd
 
 # Angular exclusions
 **/dist
+**/coverage
 **/out-tsc
 **/node_modules
 **/.angular
 **/.vscode/*
 **/npm-debug.log
 **/.DS_Store
-# Docker: TLS certificates and secrets
-deploy/certs/
+# Docker: secrets
 .env

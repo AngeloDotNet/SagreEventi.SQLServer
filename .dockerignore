@@ -3,9 +3,9 @@
 artifacts/
 **/node_modules/
 **/dist/
+**/coverage/
 **/.angular/
 .git/
 .vs/
 *.env
 **/appsettings.local.json
-deploy/certs/

@@ -1,0 +1,31 @@
+# Whole stack (API + Angular) from the images published on Docker Hub: no build, no external network.
+# Needs a .env next to this file (copy .env.example). Run: docker compose pull && docker compose up -d
+
+services:
+  sagreeventi-api:
+    container_name: sagreeventi-api
+    image: ${DOCKERHUB_USERNAME:-angelo87dock}/sagreeventi-api:latest
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - sagreeventi
+
+  sagreeventi-web:
+    container_name: sagreeventi-web
+    image: ${DOCKERHUB_USERNAME:-angelo87dock}/sagreeventi-web:latest
+    restart: always
+    depends_on:
+      sagreeventi-api:
+        condition: service_healthy
+    ports:
+      - 127.0.0.1:5417:8080
+    networks:
+      - sagreeventi
+
+networks:
+  sagreeventi:
+    # Fixed subnet: the API trusts X-Forwarded-* only from here (ForwardedHeaders__KnownNetworks__0 in .env)
+    ipam:
+      config:
+        - subnet: ${ForwardedHeaders__KnownNetworks__0:?set ForwardedHeaders__KnownNetworks__0 in .env}

@@ -12,10 +12,14 @@
 
 SagreEventi (*sagre ed eventi enogastronomici*) is a web application to browse, report and manage food and wine festivals. Anyone can report an event and browse what is on, without an account. Editing existing events is reserved to users with the `Admin` or `Editor` role.
 
-The solution has one ASP.NET Core API (API only, no hosted UI) and an Angular + PrimeNG client that talks to it. A `docker-compose.yml` runs the whole stack behind a dedicated nginx. The app does **not** sell tickets or take bookings.
+The solution has one ASP.NET Core API (API only, no hosted UI) and an Angular + PrimeNG client that talks to it. Two Docker containers (API and Angular) run behind the nginx of the host. The app does **not** sell tickets or take bookings.
 
+<!--
 > [!NOTE]
 > The original Blazor WebAssembly client has been removed. Angular is pinned to version 21 on purpose: PrimeNG 21.1.x is the latest PrimeNG release published under the MIT license, while PrimeNG 22 introduces a license key. Check PrimeTek's current terms before upgrading.
+-->
+> [!NOTE]
+> Angular is pinned to version 21 on purpose: PrimeNG 21.1.x is the latest PrimeNG release published under the MIT license, while PrimeNG 22 introduces a license key. Check PrimeTek's current terms before upgrading.
 
 ## Features
 
@@ -28,6 +32,7 @@ The solution has one ASP.NET Core API (API only, no hosted UI) and an Angular + 
 - **Automatic conclusion:** the server concludes an event once its end date has passed. A concluded event can no longer be edited by anyone, and the API has no delete.
 - **Take it with you:** add an event to your calendar (`.ics`), open its city on a map, share it.
 - **Work offline:** everything you see is stored on the device and syncs when the connection is back.
+- **Installable (PWA):** add it to the home screen of a phone or install it on a desktop; the app opens even with no network, and a new version is announced in the top bar.
 - **Accessible UI:** Italian interface, light and dark theme, keyboard and screen-reader friendly, responsive down to a phone.
 
 ## Architecture
@@ -36,9 +41,13 @@ The solution has one ASP.NET Core API (API only, no hosted UI) and an Angular + 
 |---|---|
 | `src/SagreEventi.Shared` | Shared models (`EventoModel`, moderation DTOs) |
 | `src/SagreEventi.Web.Server` | ASP.NET Core (.NET 10) Minimal API: endpoints, Identity, EF Core migrations, FusionCache, hosted service that expires events |
-| `src/SagreEventi.Web.Angular` | Angular 21 client (standalone components, signals, zoneless) with PrimeNG and a custom Aura preset |
+| `src/SagreEventi.Web` | Angular 21 client (standalone components, signals, zoneless) with PrimeNG and a custom Aura preset |
 | `tests/SagreEventi.Web.Server.Tests` | API integration tests (xUnit, in-memory SQLite) |
-| `deploy/nginx` | Dedicated nginx reverse proxy: HTTPS, static client, `/api/` forwarding |
+| `src/SagreEventi.Web/src/app/core/*.spec.ts` | Client unit tests (Vitest, jsdom) |
+| `deploy/docker-compose.*.yml`, `deploy/sites-available` | Two independent containers (Angular and API) behind the host nginx, see [DEPLOY.md](DEPLOY.md) |
+| `.github/workflows/build-push.yml` | Builds and tests (API and client), then publishes the API and Angular images on Docker Hub (push to `main`) |
+
+The Angular components keep template, styles and class in separate files (`x.component.ts`, `x.component.html`, and `x.component.css` only when the component has styles); the three pages of `features/eventi/` each live in their own folder.
 
 Why this stack:
 
@@ -60,6 +69,19 @@ The Angular client keeps its own copy of the events and syncs with the API in th
 3. **Merge:** server data replaces local data unless the local copy is pending and newer. Concluded events are removed.
 
 A sync runs at start-up, when the browser comes back online, and when you press the sync button in the top bar.
+
+### Progressive web app
+
+The client is an installable PWA (web manifest, icons, Angular service worker). The service worker caches only the application files, **not** the `/api` calls: data stays in the offline-first store described above, so there is a single source of truth on the device.
+
+- **Offline:** pages already visited, and the app shell, open with no network. The sync button turns into a crossed-out Wi-Fi icon, and a red toast tells you when a page that was never opened cannot be loaded.
+- **Updates:** the browser downloads a new version in the background. When it is ready a download icon appears in the top bar (with a short toast); clicking it reloads the app. Nothing reloads by itself, so a form you are filling is never lost.
+- **Production only:** the service worker is disabled under `ng serve`. To try it, serve the production build (`ng build`, then any static server) on `localhost` or over HTTPS.
+- **Hosting:** `ngsw.json` and `ngsw-worker.js` must never be served with a long HTTP cache; see [DEPLOY.md](DEPLOY.md#pwa-installazione-offline-e-aggiornamenti).
+
+| Online | Offline | New version ready |
+|---|---|---|
+| <img src="docs/screenshots/pwa-online-home.png" alt="Home page, online" width="250"> | <img src="docs/screenshots/pwa-offline-home.png" alt="Home page opened with no network: the sync button shows a crossed-out Wi-Fi icon" width="250"> | <img src="docs/screenshots/pwa-aggiornamento.png" alt="Download icon in the top bar and the new-version toast" width="250"> |
 
 ### API
 
@@ -100,6 +122,7 @@ An event looks like this (JSON, camelCase):
 - .NET 10 SDK
 - A SQL Server instance
 - Node.js `^20.19`, `^22.12` or `^24` for the Angular client
+- Docker with Compose v2, only to deploy (see [DEPLOY.md](DEPLOY.md))
 
 ### Configure the API
 
@@ -136,7 +159,7 @@ The API listens on `https://localhost:5001` and `http://localhost:5000`. At star
 Start the Angular client in a second terminal:
 
 ```bash
-cd src/SagreEventi.Web.Angular
+cd src/SagreEventi.Web
 npm install
 npm start
 ```
@@ -152,10 +175,12 @@ Open `http://localhost:4200`. In development, requests to `/api` are proxied to 
 
 ```bash
 dotnet test
-npm run build   # from src/SagreEventi.Web.Angular
+cd src/SagreEventi.Web
+npm test            # client unit tests (Vitest)
+npm run build
 ```
 
-The API tests (xUnit, in-memory SQLite) cover events, moderation, users, login, rate limits, forwarded headers, CORS and malicious input. The production build of the client is created in `dist/sagre-eventi-web/browser`; serve it with any static host that falls back to `index.html` for unknown paths.
+The API tests (xUnit, in-memory SQLite) cover events, moderation, users, login, rate limits, forwarded headers, CORS and malicious input. The client tests (Vitest with jsdom, `*.spec.ts` next to the sources in `src/app/core/`) cover the pure helpers, the `.ics` export, sign-in and token renewal, the HTTP interceptor, the offline store and its synchronisation, and the HTTP clients; `npm run test:coverage` prints a coverage report (informative, no threshold). The production build of the client is created in `dist/sagre-eventi-web/browser`; serve it with any static host that falls back to `index.html` for unknown paths.
 
 Check the NuGet packages for known vulnerabilities:
 
@@ -182,67 +207,32 @@ Settings can also be given as environment variables, with `__` as the separator 
 | `Identity:RegistrazionePubblica` | `true` re-enables public registration (off by default) |
 | `Database:MigraAllAvvio` | Apply migrations at start-up |
 | `Eventi:MaxPerRichiesta`, `Eventi:RichiestePutAlMinuto` | Anonymous write limits: events per `PUT` (20) and `PUT` requests per minute per IP (10) |
+| `Eventi:RichiesteStatiAlMinuto` | `GetStati` requests per minute per IP (30) |
 | `Eventi:ScadenzaIntervalloMinuti` | Minutes between two runs of the automatic expiry (60 by default) |
 | `Kestrel:Limits:MaxRequestBodySize` | Maximum request size (5 MB by default) |
 | `Cors:Origins` | Allowed origins of the Angular client (`http://localhost:4200` by default) |
 | `ForwardedHeaders:KnownProxies`, `ForwardedHeaders:KnownNetworks` | Trusted reverse proxies for `X-Forwarded-For` and `X-Forwarded-Proto`. Without them the headers are ignored |
-| `AllowedHosts` | Accepted `Host` values (set to `SERVER_NAME` in Docker) |
+| `AllowedHosts` | Accepted `Host` values (set to the public host name in Docker) |
 | `apiBaseUrl` (`public/config.json`) | Base URL of the API for the Angular client. Empty means same origin |
 
 Authentication uses bearer tokens (no cookies). Behind a reverse proxy the per-IP rate limits need `ForwardedHeaders` to be set, otherwise all users share one limit.
 
 ## Deployment
 
-`docker-compose.yml` starts four containers on a private network:
+The Angular client and the API run as two separate containers on an existing `docker-net` network, and the nginx already installed on the host publishes them (HTTPS with certbot). The images are built by the GitHub Actions workflow `.github/workflows/build-push.yml` and published on Docker Hub. The files are in `deploy/`:
 
-| Service | Image | Role |
-|---|---|---|
-| `sqlserver` | `mssql/server:2022-latest` | Database, data in the `sqldata` volume |
-| `api` | `src/SagreEventi.Web.Server/Dockerfile` | The API on port 8080 (internal only), non-root user, health check on `/healthz` |
-| `web` | `src/SagreEventi.Web.Angular/Dockerfile` | The built Angular client served by an unprivileged nginx |
-| `proxy` | `deploy/nginx/Dockerfile` | The only public entry point (ports 80/443): terminates HTTPS, serves `/` from `web`, forwards `/api/` to `api` |
-
-Client and API share one origin, so production needs no CORS and `apiBaseUrl` stays empty.
-
-```bash
-cp .env.example .env     # on Windows: copy .env.example .env
-```
-
-Fill in `.env`, then create the certificate in `deploy/certs/` (`fullchain.pem` and `privkey.pem`). For a trial, a self-signed one:
-
-```bash
-openssl req -x509 -nodes -newkey rsa:2048 -days 365 -keyout deploy/certs/privkey.pem -out deploy/certs/fullchain.pem -subj "/CN=localhost"
-docker compose up --build
-```
-
-Open `https://localhost` (or your `SERVER_NAME`) and sign in with `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env`.
-
-| Variable in `.env` | Description |
+| File | Role |
 |---|---|
-| `SERVER_NAME` | Host name served by nginx; also the only `Host` the API accepts |
-| `SQL_SA_PASSWORD` | Password of the `sa` user of the SQL Server container |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First `Admin` user |
-| `EDITOR_EMAIL`, `EDITOR_PASSWORD` | Optional `Editor` user |
-| `HTTP_PORT`, `HTTPS_PORT` | Published ports (80 and 443 by default) |
+| `docker-compose.angular.yml` | `sagreeventi-web`: static client on `127.0.0.1:5417` (port to adjust) |
+| `docker-compose.server.yml` | `sagreeventi-api`: no published port, reachable only inside `docker-net`, configured through `deploy/.env` (see `deploy/.env.example`) |
+| `sites-available/myhost.mydomain.ext` | Host nginx virtual host, proxies to the Angular container |
 
-`.env` and `deploy/certs/` are git-ignored: never commit them. nginx overwrites `X-Forwarded-For` with the real client address, rejects bodies over 5 MB (`413`), redirects HTTP to HTTPS and sends HSTS.
+Both compose files pull `${DOCKERHUB_USERNAME}/sagreeventi-api|web:latest` from Docker Hub (set `DOCKERHUB_USERNAME` in `deploy/.env`). The workflow needs the repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`; builds run without cache. On the server update with `docker compose -f <file> pull && docker compose -f <file> up -d`.
+
+The nginx inside the Angular container (`src/SagreEventi.Web/nginx.conf`) serves the static files and forwards `/api/` to `http://sagreeventi-api:8080` through the Docker DNS, so the client and the API still share one origin and `apiBaseUrl` stays empty. Set `AllowedHosts` to the public host name and `ForwardedHeaders__KnownNetworks__0` to the subnet of `docker-net`. The step-by-step procedure is in [DEPLOY.md](DEPLOY.md).
 
 > [!WARNING]
-> The Docker files have been written but not yet tried on a real Docker host. The checks to run by hand are in [TEST-MANUALI.md](TEST-MANUALI.md). The compose file is meant for trials and small deployments: for production use real certificates, a managed or backed-up SQL Server and a secret store instead of `.env`.
-
-## Project scope (v1)
-
-**In scope:** public browsing and reporting of events, sign-in with roles to edit existing events, offline use and synchronization.
-
-**Out of scope:** public registration and user profiles, ticketing and payments, deleting events (the API closes them instead), images and maps inside the app.
-
-**What's next:**
-
-- Try the Docker stack on a real host and tick off [TEST-MANUALI.md](TEST-MANUALI.md)
-- Installable offline app shell for the Angular client (service worker)
-- Server-side search and pagination once the catalog grows
-- Automated tests for the Angular sync logic
-- Geolocation: events near you
+> The Docker files have been written but not yet tried on a real Docker host. For production use a managed or backed-up SQL Server and a secret store instead of `.env`.
 
 ## Resources
 
@@ -267,8 +257,6 @@ If you find the project helpful, a ⭐ on GitHub helps others discover it.
 
 Released under the MIT License. See [LICENSE](LICENSE) for details.
 
-## About
-
-Sagre ed eventi enogastronomici is a web application that allows users to keep track of food and wine festivals and events. Users can report new events, view existing ones, and manage their own events.
-
+<!--
 Topics: `angular`, `backend`, `csharp`, `docker`, `docker-compose`, `dotnet`, `frontend`, `fusion-cache`, `sql-server`
+-->

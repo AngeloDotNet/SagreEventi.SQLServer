@@ -1,0 +1,19 @@
+version: '3.7'
+
+services:
+  sagreeventi-api:
+    container_name: sagreeventi-api
+    image: ${DOCKERHUB_USERNAME:?set DOCKERHUB_USERNAME in deploy/.env}/sagreeventi-api:latest
+    build:
+      context: ..
+      dockerfile: src/SagreEventi.Web.Server/Dockerfile
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - network
+
+networks:
+  network:
+    external:
+      name: docker-net

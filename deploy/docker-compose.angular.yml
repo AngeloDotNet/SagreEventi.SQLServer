@@ -1,0 +1,17 @@
+version: '3.7'
+
+services:
+  sagreeventi-web:
+    container_name: sagreeventi-web
+    image: ${DOCKERHUB_USERNAME:?set DOCKERHUB_USERNAME in deploy/.env}/sagreeventi-web:latest
+    build: ../src/SagreEventi.Web
+    restart: always
+    ports:
+      - 127.0.0.1:5417:8080
+    networks:
+      - network
+
+networks:
+  network:
+    external:
+      name: docker-net

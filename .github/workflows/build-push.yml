@@ -1,0 +1,93 @@
+name: Build and push images
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-push-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Push only from main, never for pull requests
+  PUSH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+
+jobs:
+  api:
+    name: API image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build and test
+        run: |
+          dotnet restore SagreEventi.sln
+          dotnet build SagreEventi.sln -c Release --no-restore
+          dotnet test SagreEventi.sln -c Release --no-build
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build image (push on main)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/SagreEventi.Web.Server/Dockerfile
+          push: ${{ env.PUSH == 'true' }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/sagreeventi-api:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/sagreeventi-api:${{ github.sha }}
+          no-cache: true
+
+  web:
+    name: Angular image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # A failing test stops the job before the image is built or pushed
+      - name: Test
+        working-directory: src/SagreEventi.Web
+        run: |
+          npm ci
+          npm test
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # The Dockerfile already runs npm ci and the production build
+      - name: Build image (push on main)
+        uses: docker/build-push-action@v6
+        with:
+          context: src/SagreEventi.Web
+          push: ${{ env.PUSH == 'true' }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/sagreeventi-web:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/sagreeventi-web:${{ github.sha }}
+          no-cache: true

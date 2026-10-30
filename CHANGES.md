@@ -3,6 +3,24 @@
 Riassunto compatto delle modifiche fatte con Claude, così non serve rileggere i file per ricostruire il contesto.
 Ordine: più recente in alto. Una voce per intervento: cosa, dove (file), perché.
 
+## 2026-10-31 — `DEPLOY.md` allineato al compose unico, `README.md` tradotto in italiano
+
+**Perché:** richiesta dell'utente: backup di `DEPLOY.md` e allineamento al compose unico; `README.md` e `CHANGES.md` devono essere in italiano.
+
+**Cosa:** copia di backup di `DEPLOY.md` prima delle modifiche, conservata come storico in `docs/DEPLOY.md.bak`. `DEPLOY.md`: spiegati i due modi di avvio (compose unico consigliato / due compose separati), immagini pubbliche e `linux/amd64`, passo 1 con `curl` dei due file senza clonare, passo 2 con la subnet diversa nei due casi, passo 3 con `docker compose pull/up -d`, aggiornamenti e comandi utili anche per il compose unico, tre nuove righe nei problemi frequenti (variabile mancante, subnet in conflitto, architettura ARM); tolta la frase «il workflow non è mai stato eseguito» (le immagini sono su Docker Hub). `README.md`: tradotto interamente dall'inglese (titoli compresi: i link dell'indice ora puntano a `#panoramica`, `#funzionalità`, `#architettura`, `#per-iniziare`, `#sviluppo`). `CHANGES.md`: già in italiano, nessuna traduzione necessaria.
+
+**Note:** `DEPLOY.md` resta più lungo del necessario sul punto «Comandi utili». Nessun test di build (solo documentazione). Nessun commit.
+
+## 2026-10-31 — Deploy con un solo compose dalle immagini di Docker Hub
+
+**Perché:** l'utente ha pubblicato `angelo87dock/sagreeventi-api` e `-web`: il deploy non deve più partire dai due compose separati.
+
+**Verifica prima di scrivere:** via API di Docker Hub i due repository sono pubblici, con tag `latest` e SHA del commit, solo `linux/amd64`; il pull anonimo del manifest `latest` risponde 200. Nginx del container web risolve `sagreeventi-api:8080` col DNS Docker, quindi basta una rete comune. **Non verificato:** l'avvio vero dei container (sul PC non c'è Docker né WSL).
+
+**Cosa:** nuovo `deploy/docker-compose.yml` (api + web, rete propria con subnet fissa presa da `ForwardedHeaders__KnownNetworks__0`, web parte quando l'API è `healthy`, `DOCKERHUB_USERNAME` di default `angelo87dock`). `deploy/.env.example`: default utente Docker Hub e subnet `172.29.250.0/24`. `README.md`: sezione Deployment riscritta (immagini, quick start col compose unico, compose separati come alternativa) e riga in Architecture.
+
+**Note:** `DEPLOY.md` non aggiornato (descrive ancora i due compose). I due compose separati restano. Da provare su un host Docker con `docker compose config` e `up -d`. Nessun commit.
+
 ## 2026-10-30 — PWA, step 5: documentazione, nginx e `PLAN-pwa.md` rimosso
 
 **Perché:** ultimo step del piano PWA, con il via dell'utente (che ha chiesto anche di cancellare il piano a lavoro concluso).

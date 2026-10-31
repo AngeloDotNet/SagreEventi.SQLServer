@@ -28,6 +28,16 @@
     />
 
     <p-select
+      class="filtri-periodo"
+      [options]="opzioniPeriodo"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="periodo()"
+      (ngModelChange)="periodo.set($event)"
+      ariaLabel="Filtra per periodo"
+    />
+
+    <p-select
       class="filtri-ordine"
       [options]="opzioniOrdine"
       optionLabel="label"
@@ -35,16 +45,6 @@
       [ngModel]="ordine()"
       (ngModelChange)="ordine.set($event)"
       ariaLabel="Ordina per"
-    />
-
-    <p-selectbutton
-      class="filtri-periodo"
-      [options]="opzioniPeriodo"
-      optionLabel="label"
-      optionValue="value"
-      [allowEmpty]="false"
-      [ngModel]="periodo()"
-      (ngModelChange)="periodo.set($event)"
     />
 
     <div class="filtri-vista" role="group" aria-label="Vista">

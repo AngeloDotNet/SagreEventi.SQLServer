@@ -5,7 +5,6 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { SelectButtonModule } from 'primeng/selectbutton';
 import { SkeletonModule } from 'primeng/skeleton';
 import { EventiStore } from '../../../core/eventi-store.service';
 import { normalizzaTesto, parseLocalDate, statoEvento } from '../../../core/evento-utils';
@@ -25,7 +24,6 @@ type Vista = 'grid' | 'list';
     InputIconModule,
     InputTextModule,
     SelectModule,
-    SelectButtonModule,
     SkeletonModule,
     EmptyStateComponent,
     EventoCardComponent,

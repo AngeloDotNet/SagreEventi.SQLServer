@@ -381,8 +381,7 @@ main { min-height: calc(100vh - var(--altezza-topbar)); padding-bottom: 6rem; }
 .filtri { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 0.9rem; background: var(--card); border: 1px solid var(--line); border-radius: var(--raggio); }
 .filtri-cerca { flex: 1 1 16rem; display: block; }
 .filtri-cerca input { width: 100%; }
-.filtri-citta, .filtri-ordine { flex: 0 1 12.5rem; min-width: 10rem; }
-.filtri-periodo { flex: 0 0 auto; }
+.filtri-citta, .filtri-periodo, .filtri-ordine { flex: 0 1 12.5rem; min-width: 10rem; }
 .filtri-vista { display: none; gap: 0.15rem; margin-left: auto; }
 @media (min-width: 800px) { .filtri-vista { display: flex; } }
 .risultati { margin: 1rem 0 1.25rem; color: var(--ink-soft); font-size: 0.95rem; }

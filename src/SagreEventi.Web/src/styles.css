@@ -426,8 +426,9 @@ main { min-height: calc(100vh - var(--altezza-topbar)); padding-bottom: 6rem; }
 .campo p-datepicker { display: block; }
 .campo .p-datepicker { display: flex; width: 100%; }
 .campo .p-datepicker .p-datepicker-input { flex: 1 1 auto; width: 100%; }
-.campo-coppia { display: grid; gap: 1.35rem; }
-@media (min-width: 600px) { .campo-coppia { grid-template-columns: 1fr 1fr; } }
+/* Two fields side by side even on phones (less scrolling); the gap is smaller there to leave room for the date text */
+.campo-coppia { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+@media (min-width: 600px) { .campo-coppia { gap: 1.35rem; } }
 .contatore { justify-self: end; color: var(--ink-soft); font-size: 0.8rem; }
 .form-azioni { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
 

@@ -75,6 +75,26 @@ describe('EventiApiService', () => {
     expect(risposta).toBe('Eventi aggiornati');
   });
 
+  it('updateEventi sends the anti-bot proof in the X-Altcha header only when given', () => {
+    service.updateEventi([], 'abc').subscribe();
+    const con = http.expectOne(`${API}/api/Eventi/UpdateEventi`);
+    expect(con.request.headers.get('X-Altcha')).toBe('abc');
+    con.flush('');
+
+    service.updateEventi([]).subscribe();
+    const senza = http.expectOne(`${API}/api/Eventi/UpdateEventi`);
+    expect(senza.request.headers.has('X-Altcha')).toBe(false);
+    senza.flush('');
+  });
+
+  it('getChallenge sends a GET to GetChallenge', () => {
+    service.getChallenge().subscribe();
+
+    const req = http.expectOne(`${API}/api/Eventi/GetChallenge`);
+    expect(req.request.method).toBe('GET');
+    req.flush({});
+  });
+
   it('uses a relative URL when the API base URL is empty (same origin)', () => {
     TestBed.resetTestingModule();
     configura('');

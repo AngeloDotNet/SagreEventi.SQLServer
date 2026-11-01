@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import type { Mock } from 'vitest';
+import { AltchaService } from './altcha.service';
 import { EventiApiService } from './eventi-api.service';
 import { EventiStore } from './eventi-store.service';
 import { Evento, EventoDraft, EventoLocale, StatoModerazione } from './models';
@@ -14,7 +15,7 @@ const ADESSO = new Date('2026-06-10T10:00:00.000Z');
 interface FakeApi {
   getEventi: Mock<(since: string) => Observable<Evento[]>>;
   getStati: Mock<(ids: string[]) => Observable<{ id: string; stato: StatoModerazione }[]>>;
-  updateEventi: Mock<(eventi: Evento[]) => Observable<string>>;
+  updateEventi: Mock<(eventi: Evento[], altcha?: string) => Observable<string>>;
 }
 
 /** An event as stored locally; `stato` is "Approvato" unless the test says otherwise. */
@@ -43,6 +44,7 @@ const draft = (parziale: Partial<EventoDraft> = {}): EventoDraft => ({
 describe('EventiStore', () => {
   let api: FakeApi;
   let puoModificare: Mock<() => boolean>;
+  let ottieniProva: Mock<() => Promise<string>>;
 
   /** Saves a snapshot in localStorage as a previous session would have done. */
   const seed = (eventi: unknown[], extra: Record<string, unknown> = {}) =>
@@ -70,9 +72,11 @@ describe('EventiStore', () => {
       updateEventi: vi.fn(() => of('ok')),
     };
     puoModificare = vi.fn(() => false);
+    ottieniProva = vi.fn(() => Promise.resolve('prova'));
     TestBed.configureTestingModule({
       providers: [
         { provide: EventiApiService, useValue: api },
+        { provide: AltchaService, useValue: { ottieniProva: () => ottieniProva() } },
         { provide: PermessiService, useValue: { puoModificare: () => puoModificare() } },
       ],
     });
@@ -308,6 +312,62 @@ describe('EventiStore', () => {
         ['cittaEvento', 'dataFineEvento', 'dataInizioEvento', 'dataOraUltimaModifica', 'descrizioneEvento', 'eventoConcluso', 'id', 'nomeEvento'],
       );
       expect(store.daInviare()).toBe(0);
+    });
+
+    it('sends a fresh anti-bot proof with every request', async () => {
+      seed(Array.from({ length: 25 }, (_, i) => ev(`e${i}`, { dirty: true })));
+      ottieniProva.mockResolvedValueOnce('p1').mockResolvedValueOnce('p2');
+
+      await crea().sincronizza();
+
+      expect(api.updateEventi.mock.calls.map((c) => c[1])).toEqual(['p1', 'p2']);
+    });
+
+    it('asks for a new proof once when the server rejects the first one', async () => {
+      seed([ev('a', { dirty: true })]);
+      ottieniProva.mockResolvedValueOnce('scaduta').mockResolvedValueOnce('nuova');
+      api.updateEventi.mockReturnValueOnce(
+        throwError(() => new HttpErrorResponse({ status: 400, error: { errors: { altcha: ['non valida'] } } })),
+      );
+      const store = crea();
+
+      await expect(store.sincronizza()).resolves.toBe(true);
+
+      expect(api.updateEventi.mock.calls.map((c) => c[1])).toEqual(['scaduta', 'nuova']);
+      expect(store.daInviare()).toBe(0);
+    });
+
+    it('gives up after a second rejection and keeps the event to send', async () => {
+      seed([ev('a', { dirty: true })]);
+      api.updateEventi.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 400, error: { errors: { altcha: ['non valida'] } } })),
+      );
+      const store = crea();
+
+      await expect(store.sincronizza()).resolves.toBe(false);
+
+      expect(api.updateEventi).toHaveBeenCalledTimes(2);
+      expect(store.daInviare()).toBe(1);
+    });
+
+    it('does not retry other 400 errors', async () => {
+      seed([ev('a', { dirty: true })]);
+      api.updateEventi.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { errors: { nomeEvento: ['x'] } } })));
+
+      await expect(crea().sincronizza()).resolves.toBe(false);
+
+      expect(api.updateEventi).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the event local when the challenge cannot be fetched (offline)', async () => {
+      seed([ev('a', { dirty: true })]);
+      ottieniProva.mockRejectedValue(new HttpErrorResponse({ status: 0 }));
+      const store = crea();
+
+      await expect(store.sincronizza()).resolves.toBe(false);
+
+      expect(api.updateEventi).not.toHaveBeenCalled();
+      expect(store.daInviare()).toBe(1);
     });
 
     it('does not call the server to push when nothing changed', async () => {

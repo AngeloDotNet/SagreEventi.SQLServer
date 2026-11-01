@@ -101,6 +101,7 @@ Da sistemare:
 - `ConnectionStrings__Default`: host del database, utente e password reali.
 - `Identity__Admin__Email` e `Identity__Admin__Password`: credenziali vere dell'admin.
 - `Identity__Editor__*`: valorizzali o lasciali vuoti.
+- `Altcha__HmacKey`: **obbligatorio**, l'API non parte con il segnaposto. Generalo con `openssl rand -hex 32` e non committarlo. Cambiarlo invalida le challenge in corso (i client ne chiedono una nuova da soli).
 - `ForwardedHeaders__KnownNetworks__0`:
   - compose unico: è la subnet della rete che il compose crea (default `172.29.250.0/24`); cambiala solo se è già usata da un'altra rete dell'host (`docker network ls` e `docker network inspect`);
   - compose separati: la subnet reale di `docker-net`:

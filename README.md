@@ -56,11 +56,17 @@ Perché questo stack:
 
 Gli eventi hanno tre stati: `InAttesa` (predefinito per le segnalazioni anonime), `Approvato` e `Rifiutato`. `GetEventi` restituisce solo gli eventi approvati e il server non si fida mai di uno stato inviato da un client. Un evento rifiutato viene conservato con una nota facoltativa, visibile solo ad `Admin` ed `Editor`: a chi l'ha segnalato non viene detto nulla e lo vede ancora come in attesa. Ritirare un evento approvato lo trasforma in un evento rifiutato e concluso, che i client usano per eliminare la copia locale alla sincronizzazione successiva.
 
+### Protezione anti-bot
+
+L'invio delle segnalazioni è protetto da una prova di lavoro (proof of work, protocollo ALTCHA v1, implementato senza librerie esterne). Prima di ogni `PUT /api/Eventi/UpdateEventi` il client chiede una challenge a `GET /api/Eventi/GetChallenge`, trova il numero segreto in un Web Worker (di solito qualche secondo, senza bloccare l'interfaccia) e invia la soluzione nell'header `X-Altcha`. Il server verifica firma HMAC, scadenza e soluzione e rifiuta il riuso della stessa prova. La verifica avviene al momento della sincronizzazione, quindi una segnalazione scritta offline resta in coda e viene inviata appena c'è rete.
+
+È un freno, non un blocco: rende costoso l'invio massivo e lavora insieme al limite di frequenza per IP. Il segreto di firma `Altcha:HmacKey` è obbligatorio fuori da Development (l'API non parte con il segnaposto); l'anti-replay è in memoria e vale per singola istanza.
+
 ### Sincronizzazione offline-first
 
 Il client Angular tiene una propria copia degli eventi e si sincronizza con l'API in tre passi:
 
-1. **Push:** gli eventi creati o modificati sul dispositivo sono inviati con `PUT /api/Eventi/UpdateEventi`.
+1. **Push:** gli eventi creati o modificati sul dispositivo sono inviati con `PUT /api/Eventi/UpdateEventi`, ciascuna richiesta con una prova anti-bot (vedi «Protezione anti-bot»).
 2. **Pull:** le modifiche degli altri sono scaricate con `GET /api/Eventi/GetEventi?since=<cursore>`.
 3. **Merge:** i dati del server sostituiscono quelli locali, a meno che la copia locale sia in attesa e più recente. Gli eventi conclusi vengono rimossi.
 
@@ -85,6 +91,7 @@ Il client è una PWA installabile (web manifest, icone, service worker di Angula
 |---|---|---|
 | `/api/Eventi/GetEventi?since={datetime}` | GET | Eventi modificati dopo `since` |
 | `/api/Eventi/UpdateEventi` | PUT | Inserisce nuovi eventi (anonimo, max 20 per richiesta, con limite di frequenza per IP). Aggiorna quelli esistenti solo con un token `Admin`/`Editor` |
+| `/api/Eventi/GetChallenge` | GET | Challenge anti-bot firmata (anonimo, con limite di frequenza per IP, mai in cache) |
 | `/api/Eventi/GetStati?ids=...` | GET | Stato degli eventi che hai segnalato (max 50 id). Un evento rifiutato risulta `InAttesa` |
 | `/api/Eventi/Revisione/*` | GET, POST | Coda di revisione, approvazione, rifiuto ed eventi conclusi; solo `Admin`/`Editor` (`Conclusi` solo `Admin`) |
 | `/api/admin/utenti`, `/api/admin/ruoli` | GET, POST, PUT, DELETE | Gestione utenti, solo `Admin` |
@@ -203,6 +210,9 @@ Le impostazioni possono essere date anche come variabili d'ambiente, con `__` co
 | `Identity:RegistrazionePubblica` | `true` riattiva la registrazione pubblica (disattivata di default) |
 | `Database:MigraAllAvvio` | Applica le migrazioni all'avvio |
 | `Eventi:MaxPerRichiesta`, `Eventi:RichiestePutAlMinuto` | Limiti di scrittura anonima: eventi per `PUT` (20) e richieste `PUT` al minuto per IP (10) |
+| `Altcha:HmacKey` | Segreto che firma le challenge anti-bot (min. 32 caratteri; obbligatorio fuori da Development, mai nel repository) |
+| `Altcha:MaxNumber`, `Altcha:ChallengeValidityMinutes` | Difficoltà (300000) e validità in minuti (10) della challenge |
+| `Eventi:RichiesteChallengeAlMinuto` | Richieste `GetChallenge` al minuto per IP (30) |
 | `Eventi:RichiesteStatiAlMinuto` | Richieste `GetStati` al minuto per IP (30) |
 | `Eventi:ScadenzaIntervalloMinuti` | Minuti tra due esecuzioni della scadenza automatica (60 di default) |
 | `Kestrel:Limits:MaxRequestBodySize` | Dimensione massima della richiesta (5 MB di default) |

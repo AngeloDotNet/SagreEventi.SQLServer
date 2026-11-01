@@ -67,6 +67,12 @@
         }
       </div>
 
+      @if (daModerare()) {
+        <p-message severity="info" icon="pi pi-info-circle">
+          La segnalazione sarà visibile a tutti solo dopo la verifica degli amministratori, per evitare spam e contenuti non idonei.
+        </p-message>
+      }
+
       <div class="form-azioni">
         <p-button type="submit" [label]="id() ? 'Salva le modifiche' : 'Segnala l\'evento'" icon="pi pi-check" />
         <a [routerLink]="id() ? ['/eventi', id()] : '/eventi'" class="btn btn-testo">Annulla</a>

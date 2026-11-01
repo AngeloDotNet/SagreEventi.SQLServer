@@ -111,7 +111,6 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IAltchaService, AltchaService>();
 
-        services.AddHealthChecks();
         ConfiguraForwardedHeaders(services, configuration);
         services.AddIdentityServices();
         services.AddOpenApiServices();

@@ -229,7 +229,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 0.25rem 0; width: 100
   inset: auto 0 0 0;
   z-index: 60;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom));
   background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: blur(14px);
@@ -249,6 +249,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 0.25rem 0; width: 100
 }
 .nav-mobile a .pi { font-size: 1.15rem; }
 .nav-mobile a.attivo { color: var(--p-primary-color); }
+/* On /eventi/nuovo "Eventi" matches too (same path prefix): only "Segnala" stays highlighted */
+.nav-mobile:has(.nav-mobile-plus.attivo) a:not(.nav-mobile-plus).attivo { color: var(--ink-soft); }
 .nav-mobile-plus .pi { background: var(--p-primary-color); color: var(--p-primary-contrast-color); border-radius: 999px; padding: 0.3rem; font-size: 0.95rem !important; }
 @media (min-width: 900px) { .nav-mobile { display: none; } }
 
@@ -426,8 +428,9 @@ main { min-height: calc(100vh - var(--altezza-topbar)); padding-bottom: 6rem; }
 .campo p-datepicker { display: block; }
 .campo .p-datepicker { display: flex; width: 100%; }
 .campo .p-datepicker .p-datepicker-input { flex: 1 1 auto; width: 100%; }
-.campo-coppia { display: grid; gap: 1.35rem; }
-@media (min-width: 600px) { .campo-coppia { grid-template-columns: 1fr 1fr; } }
+/* Two fields side by side even on phones (less scrolling); the gap is smaller there to leave room for the date text */
+.campo-coppia { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+@media (min-width: 600px) { .campo-coppia { gap: 1.35rem; } }
 .contatore { justify-self: end; color: var(--ink-soft); font-size: 0.8rem; }
 .form-azioni { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
 
@@ -455,6 +458,8 @@ main { min-height: calc(100vh - var(--altezza-topbar)); padding-bottom: 6rem; }
 
 /* Voce attiva dei menu popup (es. tema) */
 .p-menu .voce-attiva .p-menu-item-label { font-weight: 700; color: var(--p-primary-color); }
+/* Entries of the top menu that duplicate the desktop navigation ("Le mie", "Gestione") */
+@media (min-width: 900px) { .p-menu .solo-mobile { display: none; } }
 
 
 /* Icone dei temi stagionali: SVG usati come maschera, così prendono il colore del testo come le icone PrimeIcons (che non hanno zucca né albero) */

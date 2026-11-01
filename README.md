@@ -96,7 +96,6 @@ Il client è una PWA installabile (web manifest, icone, service worker di Angula
 | `/api/Eventi/Revisione/*` | GET, POST | Coda di revisione, approvazione, rifiuto ed eventi conclusi; solo `Admin`/`Editor` (`Conclusi` solo `Admin`) |
 | `/api/admin/utenti`, `/api/admin/ruoli` | GET, POST, PUT, DELETE | Gestione utenti, solo `Admin` |
 | `/api/auth/login`, `/api/auth/refresh`, `/api/auth/me` | POST, GET | Token bearer e di refresh, utente corrente. La registrazione è disattivata |
-| `/healthz` | GET | Probe di vita usato da Docker, non instradato dal proxy nginx |
 
 Il server imposta da solo `dataOraUltimaModifica` a ogni scrittura; il valore inviato dal client serve solo a decidere quale versione sia più recente. Il documento OpenAPI è su `/openapi/v1.json` in Development.
 
@@ -248,7 +247,7 @@ docker compose up -d
 
 Nel `.env` imposta almeno `ConnectionStrings__Default`, `Identity__Admin__*`, `AllowedHosts` (il nome host pubblico) e `ForwardedHeaders__KnownNetworks__0`, che è anche la subnet della rete creata dal compose (`172.29.250.0/24` di default: cambiala se è in conflitto con un'altra rete dell'host). `DOCKERHUB_USERNAME` vale `angelo87dock` di default; impostalo solo per usare immagini tue.
 
-Il compose avvia entrambi i container su una rete propria, quindi non serve una `docker-net` esterna: il container web raggiunge l'API come `sagreeventi-api:8080` tramite il DNS di Docker e parte solo quando l'API è `healthy`. Il container web ascolta su `127.0.0.1:5417` (porta da adattare); metti davanti il nginx dell'host (`deploy/sites-available/myhost.mydomain.ext`) per l'HTTPS. Aggiorna con `docker compose pull && docker compose up -d`.
+Il compose avvia entrambi i container su una rete propria, quindi non serve una `docker-net` esterna: il container web raggiunge l'API come `sagreeventi-api:8080` tramite il DNS di Docker. Il container web ascolta su `127.0.0.1:5417` (porta da adattare); metti davanti il nginx dell'host (`deploy/sites-available/myhost.mydomain.ext`) per l'HTTPS. Aggiorna con `docker compose pull && docker compose up -d`.
 
 ### Due compose separati
 

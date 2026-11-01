@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { AggiornamentoAppService } from './aggiornamento-app.service';
 import { AltchaService } from './altcha.service';
 import { EventiApiService } from './eventi-api.service';
 import { confrontaPerInizio, nuovoId, parseUtc, toApiPayload } from './evento-utils';
@@ -23,6 +24,7 @@ const MAX_ID_STATI = 50;
 export class EventiStore {
   private readonly api = inject(EventiApiService);
   private readonly altcha = inject(AltchaService);
+  private readonly aggiornamento = inject(AggiornamentoAppService);
   private readonly permessi = inject(PermessiService);
 
   private readonly tutti = signal<EventoLocale[]>([]);
@@ -129,6 +131,8 @@ export class EventiStore {
       return true;
     } catch (err) {
       this.erroreSync.set(descriviErrore(err));
+      // Un client vecchio non sa risolvere la prova anti-bot: se esiste una versione nuova, l'utente deve poterla applicare
+      if (provaRifiutata(err)) void this.aggiornamento.controlla();
       return false;
     } finally {
       this.sincronizzando.set(false);
@@ -233,6 +237,7 @@ function eApprovato(e: EventoLocale): boolean {
 function descriviErrore(err: unknown): string {
   if (err instanceof HttpErrorResponse) {
     if (err.status === 0) return 'Il server non risponde. Controlla la connessione e l\'indirizzo dell\'API.';
+    if (provaRifiutata(err)) return "La verifica anti-bot non è riuscita. Se l'app non è aggiornata, usa l'icona in alto per aggiornarla e riprova.";
     return `Il server ha risposto con errore ${err.status}.`;
   }
   return 'Sincronizzazione non riuscita.';

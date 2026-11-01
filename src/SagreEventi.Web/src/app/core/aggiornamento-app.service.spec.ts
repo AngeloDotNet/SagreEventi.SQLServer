@@ -10,13 +10,16 @@ describe('AggiornamentoAppService', () => {
   const messaggi = { add: vi.fn() };
   const reload = vi.fn();
   const activateUpdate = vi.fn();
+  const checkForUpdate = vi.fn();
+  /** A document that can receive events, as the service listens to `visibilitychange`. */
+  let doc: EventTarget & { location: { reload: () => void }; visibilityState: string };
 
   const crea = (isEnabled = true): AggiornamentoAppService => {
     TestBed.configureTestingModule({
       providers: [
-        { provide: SwUpdate, useValue: { isEnabled, versionUpdates: versioni, activateUpdate } },
+        { provide: SwUpdate, useValue: { isEnabled, versionUpdates: versioni, activateUpdate, checkForUpdate } },
         { provide: MessageService, useValue: messaggi },
-        { provide: DOCUMENT, useValue: { location: { reload } } },
+        { provide: DOCUMENT, useValue: doc },
       ],
     });
     return TestBed.inject(AggiornamentoAppService);
@@ -26,7 +29,11 @@ describe('AggiornamentoAppService', () => {
     messaggi.add.mockReset();
     reload.mockReset();
     activateUpdate.mockReset().mockResolvedValue(true);
+    checkForUpdate.mockReset().mockResolvedValue(false);
+    doc = Object.assign(new EventTarget(), { location: { reload }, visibilityState: 'visible' });
   });
+
+  afterEach(() => vi.useRealTimers());
 
   it('starts without an update available', () => {
     expect(crea().disponibile()).toBe(false);
@@ -74,5 +81,61 @@ describe('AggiornamentoAppService', () => {
     await expect(crea().aggiorna()).rejects.toThrow('boom');
 
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  describe('checking for new versions', () => {
+    const UN_ORA = 60 * 60 * 1000;
+    const CINQUE_MINUTI = 5 * 60 * 1000;
+    const tornaInPrimoPiano = () => doc.dispatchEvent(new Event('visibilitychange'));
+
+    beforeEach(() => vi.useFakeTimers());
+
+    it('asks the server once an hour', () => {
+      crea();
+
+      vi.advanceTimersByTime(UN_ORA);
+      expect(checkForUpdate).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(UN_ORA);
+      expect(checkForUpdate).toHaveBeenCalledTimes(2);
+    });
+
+    it('asks when the page comes back to the foreground, at most once every five minutes', () => {
+      crea();
+
+      tornaInPrimoPiano();
+      tornaInPrimoPiano();
+      expect(checkForUpdate).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(CINQUE_MINUTI);
+      tornaInPrimoPiano();
+      expect(checkForUpdate).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not ask when the page goes to the background', () => {
+      crea();
+      doc.visibilityState = 'hidden';
+
+      tornaInPrimoPiano();
+
+      expect(checkForUpdate).not.toHaveBeenCalled();
+    });
+
+    it('never asks when the service worker is not enabled', async () => {
+      const service = crea(false);
+
+      vi.advanceTimersByTime(UN_ORA);
+      tornaInPrimoPiano();
+      await service.controlla();
+
+      expect(checkForUpdate).not.toHaveBeenCalled();
+    });
+
+    it('controlla asks at once and swallows a failure (offline)', async () => {
+      checkForUpdate.mockRejectedValue(new Error('offline'));
+
+      await expect(crea().controlla()).resolves.toBeUndefined();
+
+      expect(checkForUpdate).toHaveBeenCalledTimes(1);
+    });
   });
 });

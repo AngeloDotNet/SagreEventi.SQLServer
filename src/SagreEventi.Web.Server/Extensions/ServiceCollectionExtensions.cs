@@ -8,9 +8,13 @@ using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using SagreEventi.Web.Server.HostedServices;
 using SagreEventi.Web.Server.Models.Services.Application;
 using SagreEventi.Web.Server.Models.Services.Infrastructure;
+using AltchaOptions = SagreEventi.Web.Server.Options.AltchaOptions;
+using AltchaOptionsValidator = SagreEventi.Web.Server.Options.AltchaOptionsValidator;
 using ScadenzaEventiOptions = SagreEventi.Web.Server.Options.ScadenzaEventiOptions;
 using ZiggyCreatures.Caching.Fusion;
 
@@ -90,6 +94,22 @@ public static class ServiceCollectionExtensions
                 httpContext.Connection.RemoteIpAddress?.ToString() ?? "sconosciuto",
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = limite, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 });
         }));
+
+        // Rate limit on GetChallenge (anonymous): requests per minute per IP
+        services.AddRateLimiter(options => options.AddPolicy(EventiEndpoints.ChallengeRateLimitPolicy, httpContext =>
+        {
+            var limite = httpContext.RequestServices.GetRequiredService<IConfiguration>()
+                .GetValue("Eventi:RichiesteChallengeAlMinuto", EventiEndpoints.RichiesteChallengeAlMinutoDefault);
+            return RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.Connection.RemoteIpAddress?.ToString() ?? "sconosciuto",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = limite, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 });
+        }));
+
+        // Anti-bot proof of work on the event writes; the key is validated at startup (a real secret is required outside Development)
+        services.AddOptions<AltchaOptions>().Bind(configuration.GetSection(AltchaOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<AltchaOptions>, AltchaOptionsValidator>();
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<IAltchaService, AltchaService>();
 
         services.AddHealthChecks();
         ConfiguraForwardedHeaders(services, configuration);

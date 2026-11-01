@@ -48,6 +48,9 @@ export class EventoFormComponent implements OnInit {
 
   protected readonly nonTrovato = signal(false);
 
+  /** A new report from someone who cannot moderate is published only after review (Admin and Editor publish at once). */
+  protected readonly daModerare = computed(() => !this.id() && !this.permessi.puoModificare());
+
   protected readonly form = this.fb.group(
     {
       nomeEvento: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(200)]],
@@ -125,7 +128,7 @@ export class EventoFormComponent implements OnInit {
       destinazione = this.store.crea(draft).id;
     }
 
-    const inRevisione = !id && !this.permessi.puoModificare();
+    const inRevisione = this.daModerare();
     this.messaggi.add({
       severity: 'success',
       summary: id ? 'Modifiche salvate' : inRevisione ? 'Segnalazione ricevuta' : 'Evento segnalato',

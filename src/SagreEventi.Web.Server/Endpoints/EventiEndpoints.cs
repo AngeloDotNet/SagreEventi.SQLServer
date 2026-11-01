@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SagreEventi.Shared.Models;
 using SagreEventi.Web.Server.Models.Identity;
 using SagreEventi.Web.Server.Models.Services.Application;
@@ -17,6 +18,8 @@ public static class EventiEndpoints
 
         group.MapGet("/GetEventi", GetEventiAsync);
         group.MapGet("/GetStati", GetStatiAsync).RequireRateLimiting(StatiRateLimitPolicy);
+        group.MapGet("/GetChallenge", GetChallenge).RequireRateLimiting(ChallengeRateLimitPolicy)
+            .Produces<AltchaChallenge>();
         group.MapPut("/UpdateEventi", UpdateEventiAsync).RequireRateLimiting(ScritturaRateLimitPolicy);
 
         return app;
@@ -24,6 +27,14 @@ public static class EventiEndpoints
 
     public const string ScritturaRateLimitPolicy = "scrittura";
     public const string StatiRateLimitPolicy = "stati";
+    /// <summary>Rate limit policy name for the anti-bot challenge requests.</summary>
+    public const string ChallengeRateLimitPolicy = "challenge";
+
+    /// <summary>Request header carrying the solved anti-bot challenge (base64 JSON produced by the ALTCHA widget).</summary>
+    public const string AltchaHeaderName = "X-Altcha";
+
+    /// <summary>Default challenge requests allowed per minute.</summary>
+    public const int RichiesteChallengeAlMinutoDefault = 30;
     public const int MaxIdStatiPerRichiesta = 50;
     public const int RichiesteStatiAlMinutoDefault = 30;
     public const int MaxEventiPerRichiestaDefault = 20;
@@ -53,11 +64,30 @@ public static class EventiEndpoints
         return Results.Ok(await eventiService.GetStatiAsync(richiesti, cancellationToken));
     }
 
+    /// <summary>Anonymous: issues a signed proof-of-work challenge that the client must solve and send in the <c>X-Altcha</c> header of <c>UpdateEventi</c>. Never cached.</summary>
+    private static IResult GetChallenge(IAltchaService altchaService, HttpContext httpContext)
+    {
+        httpContext.Response.Headers.CacheControl = "no-store";
+        return Results.Ok(altchaService.CreateChallenge());
+    }
+
     private static async Task<IResult> UpdateEventiAsync(
         List<EventoModel> eventi, ClaimsPrincipal utente, IAuthorizationService authorization, IConfiguration configuration,
-        IEventiService eventiService, ILogger<EventiLog> logger, CancellationToken cancellationToken)
+        IEventiService eventiService, IAltchaService altchaService, ILogger<EventiLog> logger, CancellationToken cancellationToken,
+        [FromHeader(Name = AltchaHeaderName)] string? altcha = null)
     {
         logger.LogInformation("UpdateEventiAsync called with {Count} eventi", eventi.Count);
+
+        // Anti-bot: a valid, unused proof of work is required from every caller, authenticated or not (the reason is logged, never returned)
+        var prova = altchaService.Verify(altcha);
+        if (prova != AltchaVerificationResult.Valid)
+        {
+            logger.LogWarning("UpdateEventiAsync rejected: anti-bot verification {Result}", prova);
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["altcha"] = ["Verifica anti-bot mancante, non valida o scaduta."],
+            });
+        }
 
         // Per-request limit: the insert is anonymous, without a cap a single call could insert thousands of rows
         var massimo = configuration.GetValue("Eventi:MaxPerRichiesta", MaxEventiPerRichiestaDefault);

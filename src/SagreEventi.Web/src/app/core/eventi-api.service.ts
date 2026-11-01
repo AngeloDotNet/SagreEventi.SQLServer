@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { AltchaChallenge } from './altcha-solver';
 import { ConfigService } from './config.service';
 import { EsitoModerazione, Evento } from './models';
 
@@ -24,8 +25,14 @@ export class EventiApiService {
     return this.http.get<EsitoModerazione[]>(this.url('GetStati'), { params: { ids } });
   }
 
-  /** PUT api/Eventi/UpdateEventi → inserisce i nuovi eventi e aggiorna quelli più recenti sul server. */
-  updateEventi(eventi: Evento[]): Observable<string> {
-    return this.http.put(this.url('UpdateEventi'), eventi, { responseType: 'text' });
+  /** GET api/Eventi/GetChallenge → challenge anti-bot (proof of work) firmata dal server. */
+  getChallenge(): Observable<AltchaChallenge> {
+    return this.http.get<AltchaChallenge>(this.url('GetChallenge'));
+  }
+
+  /** PUT api/Eventi/UpdateEventi → inserisce i nuovi eventi e aggiorna quelli più recenti sul server. `altcha` è la prova anti-bot (header `X-Altcha`). */
+  updateEventi(eventi: Evento[], altcha?: string): Observable<string> {
+    const headers = altcha ? { 'X-Altcha': altcha } : undefined;
+    return this.http.put(this.url('UpdateEventi'), eventi, { responseType: 'text', headers });
   }
 }

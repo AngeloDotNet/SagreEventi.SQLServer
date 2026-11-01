@@ -16,6 +16,7 @@
             "browser": "src/main.ts",
             "index": "src/index.html",
             "tsConfig": "tsconfig.app.json",
+            "webWorkerTsConfig": "tsconfig.worker.json",
             "assets": [{ "glob": "**/*", "input": "public" }],
             "styles": ["node_modules/primeicons/primeicons.css", "src/styles.css"]
           },

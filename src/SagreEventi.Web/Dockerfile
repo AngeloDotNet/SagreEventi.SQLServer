@@ -13,5 +13,3 @@ FROM nginxinc/nginx-unprivileged:stable-alpine AS final
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/sagre-eventi-web/browser /usr/share/nginx/html
 EXPOSE 8080
-HEALTHCHECK --interval=15s --timeout=3s --retries=3 \
-    CMD wget -q --spider http://127.0.0.1:8080/ || exit 1

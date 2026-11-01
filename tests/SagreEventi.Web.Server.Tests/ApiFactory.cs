@@ -39,10 +39,18 @@ public class ApiFactory : WebApplicationFactory<Program>
             ["Identity:Admin:Password"] = AdminPassword,
             // The tests make many PUTs from the same address: the real limit is tested in a dedicated test
             ["Eventi:RichiestePutAlMinuto"] = "1000",
+            ["Eventi:RichiesteChallengeAlMinuto"] = "1000",
+            // Real anti-bot verification with a cheap difficulty (the minimum allowed): the proofs are solved for real
+            ["Altcha:HmacKey"] = AltchaTestHelper.TestKey,
+            ["Altcha:MaxNumber"] = "1000",
         }));
 
         builder.ConfigureServices(services =>
         {
+            // Solves a real challenge for every UpdateEventi call, so the many existing tests do not each have to do it.
+            // The dedicated anti-bot tests opt out with the SkipHeader header and send (or omit) their own proof.
+            services.AddTransient<IStartupFilter, AltchaTestStartupFilter>();
+
             // AddDbContextPool registers the options, the configuration and the pool: all of them must be removed.
             var daRimuovere = services
                 .Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>)

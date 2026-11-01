@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { AltchaService } from './altcha.service';
 import { EventiApiService } from './eventi-api.service';
 import { confrontaPerInizio, nuovoId, parseUtc, toApiPayload } from './evento-utils';
 import { PermessiService } from './permessi.service';
@@ -21,6 +22,7 @@ const MAX_ID_STATI = 50;
 @Injectable({ providedIn: 'root' })
 export class EventiStore {
   private readonly api = inject(EventiApiService);
+  private readonly altcha = inject(AltchaService);
   private readonly permessi = inject(PermessiService);
 
   private readonly tutti = signal<EventoLocale[]>([]);
@@ -107,7 +109,7 @@ export class EventiStore {
       if (daInviare.length > 0) {
         // Il server accetta al massimo MAX_EVENTI_PER_RICHIESTA eventi per chiamata
         for (let i = 0; i < daInviare.length; i += MAX_EVENTI_PER_RICHIESTA) {
-          await firstValueFrom(this.api.updateEventi(daInviare.slice(i, i + MAX_EVENTI_PER_RICHIESTA).map(toApiPayload)));
+          await this.invia(daInviare.slice(i, i + MAX_EVENTI_PER_RICHIESTA).map(toApiPayload));
         }
         const inviati = new Map(daInviare.map((e) => [e.id, e.dataOraUltimaModifica]));
         this.tutti.update((list) =>
@@ -130,6 +132,22 @@ export class EventiStore {
       return false;
     } finally {
       this.sincronizzando.set(false);
+    }
+  }
+
+  /**
+   * Invia un lotto con una prova anti-bot nuova (ogni prova vale una sola volta). Se il server la rifiuta
+   * (es. scaduta durante un invio lento) ne chiede una seconda; al secondo rifiuto l'errore sale.
+   */
+  private async invia(lotto: Evento[]): Promise<void> {
+    for (let tentativo = 1; ; tentativo++) {
+      const prova = await this.altcha.ottieniProva();
+      try {
+        await firstValueFrom(this.api.updateEventi(lotto, prova));
+        return;
+      } catch (err) {
+        if (tentativo >= 2 || !provaRifiutata(err)) throw err;
+      }
     }
   }
 
@@ -218,4 +236,9 @@ function descriviErrore(err: unknown): string {
     return `Il server ha risposto con errore ${err.status}.`;
   }
   return 'Sincronizzazione non riuscita.';
+}
+
+/** True when the server rejected the anti-bot proof (400 with the "altcha" field): expired, reused, or sent by an outdated client. */
+function provaRifiutata(err: unknown): boolean {
+  return err instanceof HttpErrorResponse && err.status === 400 && !!err.error?.errors?.altcha;
 }

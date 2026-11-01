@@ -50,9 +50,6 @@ public class Program
         app.UseAuthentication();
         app.UseAuthorization();
 
-        // Liveness probe for Docker/nginx: anonymous, no dependencies, no internal details
-        app.MapHealthChecks("/healthz");
-
         app.MapAuthEndpoints(app.Configuration);
         app.MapEventiEndpoints();
         app.MapRevisioneEndpoints();

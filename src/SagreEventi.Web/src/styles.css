@@ -404,15 +404,18 @@ main { min-height: calc(100vh - var(--altezza-topbar)); padding-bottom: 6rem; }
 .indietro-scuro:hover { background: transparent; color: var(--p-primary-color); }
 .dettaglio-emoji { position: absolute; right: 0.5rem; top: 0.5rem; font-size: clamp(6rem, 18vw, 10rem); line-height: 1; transform: rotate(-8deg); filter: drop-shadow(0 12px 18px rgb(0 0 0 / 0.3)); }
 
-.dettaglio-corpo { display: grid; gap: 2rem; margin-top: -1.75rem; position: relative; }
+.dettaglio-corpo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; margin-top: -1.75rem; position: relative; }
 @media (min-width: 900px) { .dettaglio-corpo { grid-template-columns: minmax(0, 1fr) 19rem; align-items: start; } }
 .dettaglio-principale { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 1.5rem 1.5rem 1.75rem; }
 @media (min-width: 720px) { .dettaglio-principale { padding: 2rem 2.25rem 2.25rem; } }
-.dettaglio-principale h1 { margin: 0.75rem 0 1.25rem; font-size: clamp(1.8rem, 4.5vw, 2.8rem); letter-spacing: -0.035em; }
+.dettaglio-principale h1 { overflow-wrap: anywhere; margin: 0.75rem 0 1.25rem; font-size: clamp(1.8rem, 4.5vw, 2.8rem); letter-spacing: -0.035em; }
 .dettaglio-dati { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); padding: 1rem 0; border-block: 1px solid var(--line); }
 .dettaglio-dati dt { font-size: 0.85rem; color: var(--ink-soft); }
-.dettaglio-dati dd { font-weight: 700; font-size: 1.05rem; }
-.dettaglio-descrizione { margin-top: 1.5rem; white-space: pre-line; max-width: 65ch; font-size: 1.05rem; line-height: 1.7; }
+.dettaglio-dati dd { font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
+.dettaglio-descrizione { margin-top: 1.5rem; white-space: pre-line; max-width: 65ch; font-size: 1.05rem; line-height: 1.7; overflow-wrap: anywhere; }
+.link-descrizione { font-weight: 600; color: var(--p-primary-color); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
+.link-descrizione .pi { margin-left: 0.25rem; font-size: 0.75em; }
+.dettaglio-azioni .icona-dopo { margin-left: 0.4rem; font-size: 0.8em; }
 .dettaglio-nota { margin-top: 1.25rem; font-size: 0.9rem; color: var(--ink-soft); }
 .dettaglio-azioni { display: grid; gap: 0.6rem; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 1.1rem; }
 @media (min-width: 900px) { .dettaglio-azioni { position: sticky; top: calc(var(--altezza-topbar) + 1rem); } }

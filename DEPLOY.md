@@ -116,7 +116,7 @@ Il `.env` contiene segreti: non va versionato.
 
 ### 3. Avviare lo stack
 
-**Compose unico (consigliato)**: avvia API e Angular insieme. Il container Angular parte solo quando l'API è `healthy`.
+**Compose unico (consigliato)**: avvia API e Angular insieme.
 
 ```bash
 docker compose pull
@@ -135,13 +135,11 @@ docker compose -f docker-compose.server.yml logs -f
 Controlli:
 
 - Nei log non devono esserci errori di connessione al database né di migrazione.
-- Stato salute (può servire fino a ~30 s):
+- Il container deve risultare in esecuzione (non ci sono healthcheck di Docker):
 
   ```bash
   docker ps --filter name=sagreeventi-api
   ```
-
-  Deve comparire `healthy`. L'endpoint di controllo è `/healthz`.
 
 ### 4. Avviare Angular (solo compose separati)
 
@@ -155,12 +153,12 @@ docker compose -f docker-compose.angular.yml up -d
 Controlli (per entrambe le modalità):
 
 ```bash
-docker ps --filter name=sagreeventi-web          # deve diventare healthy
+docker ps --filter name=sagreeventi-web          # deve risultare in esecuzione
 curl -I http://127.0.0.1:5417/                   # 200
-curl -i http://127.0.0.1:5417/api/healthz        # vedi nota sotto
+curl -i "http://127.0.0.1:5417/api/Eventi/GetEventi?since=2020-01-01T00:00:00"   # 200 con l'elenco JSON degli eventi
 ```
 
-Nota: `/api/healthz` dipende da come l'API espone l'health check. Se risponde 404 dall'API, il proxy funziona comunque (il 404 arriva dall'API, non da nginx Angular). Un 502 indica invece che il container Angular non raggiunge `sagreeventi-api:8080` (controlla che siano entrambi sulla stessa rete e che l'API sia attiva).
+Nota: l'ultima chiamata attraversa il proxy del container Angular fino all'API. Un 502 indica che il container Angular non raggiunge `sagreeventi-api:8080` (controlla che siano entrambi sulla stessa rete e che l'API sia attiva).
 
 ### 5. Configurare nginx sull'host
 

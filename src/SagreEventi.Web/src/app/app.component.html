@@ -65,14 +65,11 @@
 </main>
 
 <nav class="nav-mobile" aria-label="Principale">
-  @for (l of link(); track l.path) {
-    <a [routerLink]="l.path" routerLinkActive="attivo" [routerLinkActiveOptions]="{ exact: l.esatto }">
+  @for (l of linkMobile; track l.path) {
+    <a [routerLink]="l.path" routerLinkActive="attivo" [routerLinkActiveOptions]="{ exact: l.esatto }" [class.nav-mobile-plus]="l.evidenzia" [attr.aria-label]="l.ariaLabel ?? null">
       <i [class]="'pi ' + l.icona" aria-hidden="true"></i><span>{{ l.etichetta }}</span>
     </a>
   }
-  <a routerLink="/eventi/nuovo" routerLinkActive="attivo" class="nav-mobile-plus">
-    <i class="pi pi-plus" aria-hidden="true"></i><span>Segnala</span>
-  </a>
 </nav>
 
 <p-toast position="bottom-right" />

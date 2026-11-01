@@ -40,23 +40,47 @@ export class AppComponent {
   private readonly permessi = inject(PermessiService);
   private readonly revisione = inject(RevisioneService);
 
+  /** "Le mie" (own reports): only when this device holds a report of the user that is not approved yet, whatever the role. */
+  private readonly linkMie = computed(() =>
+    this.store.mieSegnalazioni().length > 0 ? [{ path: '/segnalazioni', etichetta: 'Le mie', icona: 'pi-inbox', esatto: false }] : [],
+  );
+
+  /** "Gestione" (moderation): only for who can moderate. */
+  private readonly linkGestione = computed(() =>
+    this.permessi.modificaConsentita()
+      ? [{ path: '/gestione', etichetta: this.etichettaGestione(), icona: 'pi-cog', esatto: false }]
+      : [],
+  );
+
+  /** Desktop top navigation. */
   protected readonly link = computed(() => [
     { path: '/', etichetta: 'Home', icona: 'pi-home', esatto: true },
     { path: '/eventi', etichetta: 'Eventi', icona: 'pi-th-large', esatto: false },
     { path: '/agenda', etichetta: 'Agenda', icona: 'pi-calendar', esatto: false },
-    ...(this.store.mieSegnalazioni().length > 0
-      ? [{ path: '/segnalazioni', etichetta: 'Le mie', icona: 'pi-inbox', esatto: false }]
-      : []),
-    ...(this.permessi.modificaConsentita()
-      ? [{ path: '/gestione', etichetta: this.etichettaGestione(), icona: 'pi-cog', esatto: false }]
-      : []),
+    ...this.linkMie(),
+    ...this.linkGestione(),
   ]);
 
-  /** Entries of the topbar menu: account (login or logout) and the information page. */
+  /** Mobile bottom navigation: always these five entries, "Segnala" in the middle (highlighted). */
+  protected readonly linkMobile: readonly { path: string; etichetta: string; icona: string; esatto: boolean; evidenzia: boolean; ariaLabel?: string }[] = [
+    { path: '/', etichetta: 'Home', icona: 'pi-home', esatto: true, evidenzia: false },
+    { path: '/eventi', etichetta: 'Eventi', icona: 'pi-th-large', esatto: false, evidenzia: false },
+    { path: '/eventi/nuovo', etichetta: 'Segnala', icona: 'pi-plus', esatto: false, evidenzia: true },
+    { path: '/agenda', etichetta: 'Agenda', icona: 'pi-calendar', esatto: false, evidenzia: false },
+    // Short label: "Informazioni" does not fit a column on a 360 px screen; screen readers still get the full name
+    { path: '/informazioni', etichetta: 'Info', icona: 'pi-info-circle', esatto: false, evidenzia: false, ariaLabel: 'Informazioni' },
+  ];
+
+  /**
+   * Entries of the topbar menu: account (login or logout), "Le mie" and "Gestione" (mobile only: on desktop the top navigation
+   * has them) and the information page.
+   */
   protected readonly voci = computed<MenuItem[]>(() => [
     this.auth.autenticato()
       ? { label: `Esci (${this.auth.email()})`, icon: 'pi pi-sign-out', command: () => this.esci() }
       : { label: 'Accedi', icon: 'pi pi-user', routerLink: '/login' },
+    ...this.linkMie().map((l) => ({ label: l.etichetta, icon: `pi ${l.icona}`, routerLink: l.path, styleClass: 'solo-mobile' })),
+    ...this.linkGestione().map((l) => ({ label: l.etichetta, icon: `pi ${l.icona}`, routerLink: l.path, styleClass: 'solo-mobile' })),
     { label: 'Informazioni', icon: 'pi pi-info-circle', routerLink: '/informazioni' },
   ]);
 

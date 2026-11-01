@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import type { Mock } from 'vitest';
+import { AggiornamentoAppService } from './aggiornamento-app.service';
 import { AltchaService } from './altcha.service';
 import { EventiApiService } from './eventi-api.service';
 import { EventiStore } from './eventi-store.service';
@@ -45,6 +46,7 @@ describe('EventiStore', () => {
   let api: FakeApi;
   let puoModificare: Mock<() => boolean>;
   let ottieniProva: Mock<() => Promise<string>>;
+  let controlla: Mock<() => Promise<void>>;
 
   /** Saves a snapshot in localStorage as a previous session would have done. */
   const seed = (eventi: unknown[], extra: Record<string, unknown> = {}) =>
@@ -73,10 +75,12 @@ describe('EventiStore', () => {
     };
     puoModificare = vi.fn(() => false);
     ottieniProva = vi.fn(() => Promise.resolve('prova'));
+    controlla = vi.fn(() => Promise.resolve());
     TestBed.configureTestingModule({
       providers: [
         { provide: EventiApiService, useValue: api },
         { provide: AltchaService, useValue: { ottieniProva: () => ottieniProva() } },
+        { provide: AggiornamentoAppService, useValue: { controlla: () => controlla() } },
         { provide: PermessiService, useValue: { puoModificare: () => puoModificare() } },
       ],
     });
@@ -623,6 +627,40 @@ describe('EventiStore', () => {
   });
 
   describe('sincronizza: errors and concurrency', () => {
+    const provaRifiutata = () => throwError(() => new HttpErrorResponse({ status: 400, error: { errors: { altcha: ['non valida'] } } }));
+
+    it('tells the user to update the app when the anti-bot proof is rejected twice, and looks for a new version', async () => {
+      seed([ev('a', { dirty: true })]);
+      api.updateEventi.mockReturnValue(provaRifiutata());
+      const store = crea();
+
+      await expect(store.sincronizza()).resolves.toBe(false);
+
+      expect(store.erroreSync()).toContain('verifica anti-bot');
+      expect(store.erroreSync()).toContain("usa l'icona in alto per aggiornarla");
+      expect(controlla).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not look for a new version after an ordinary error', async () => {
+      seed([ev('a', { dirty: true })]);
+      api.updateEventi.mockReturnValue(errore(500));
+
+      await crea().sincronizza();
+
+      expect(controlla).not.toHaveBeenCalled();
+    });
+
+    it('does not mistake another 400 for an anti-bot rejection', async () => {
+      seed([ev('a', { dirty: true })]);
+      api.updateEventi.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { errors: { nomeEvento: ['x'] } } })));
+      const store = crea();
+
+      await store.sincronizza();
+
+      expect(store.erroreSync()).toBe('Il server ha risposto con errore 400.');
+      expect(controlla).not.toHaveBeenCalled();
+    });
+
     it.each([
       [0, 'Il server non risponde'],
       [500, 'errore 500'],

@@ -25,7 +25,7 @@ Il deploy avviene sempre con `Dockerfile` e `docker-compose`. L'host e la sua co
 - **Una sola immagine per tutti gli ambienti:** la configurazione entra a runtime tramite variabili d'ambiente o file montati, mai con build diverse.
 - **`.dockerignore`** sempre presente (`bin`, `obj`, `node_modules`, `.git`, file di segreti, `.env`).
 - **Cache dei layer:** copia prima i file di dipendenze (`*.csproj`, `Directory.Packages.props`, `package*.json`), poi `restore`/`npm ci`, poi il resto del codice.
-- **Healthcheck** coerente con `/health/live`, definito nel **compose** (`healthcheck:`) e non nel Dockerfile, che può non averlo. Le immagini `aspnet` non includono `curl` né `wget`: il controllo usa uno strumento disponibile nell'immagine, senza aggiungere pacchetti al runtime solo per questo; quale strumento si concorda per progetto. Immagini piccole (runtime-only, niente SDK in produzione).
+- **Immagini piccole** (runtime-only, niente SDK in produzione). Nessun healthcheck, né nel Dockerfile né nel compose.
 - **Porte:** l'app ascolta su una porta non privilegiata (es. 8080) via `ASPNETCORE_HTTP_PORTS`; HTTPS e certificati sono responsabilità dell'host/reverse proxy; per gli header `X-Forwarded-*` e i proxy fidati vedi `security.md` ("Dietro un reverse proxy").
 - **Arresto graduale (vedi `core.md` §5):** l'`ENTRYPOINT` è in forma exec (`["dotnet", "App.dll"]`, non in forma shell), così il processo riceve `SIGTERM` direttamente; nel compose `stop_grace_period` è maggiore del `ShutdownTimeout` dell'host dell'app, altrimenti i job in corso vengono interrotti dal `SIGKILL`.
 - **Log su stdout/stderr**, mai su file dentro il container, salvo diversa scelta esplicita concordata per il logging (vedi `core.md` §5).
@@ -35,14 +35,14 @@ Il deploy avviene sempre con `Dockerfile` e `docker-compose`. L'host e la sua co
 - **Servizi dipendenti** (Redis, RabbitMQ; il database no, è già sul server: vedi sopra) definiti nel compose con:
   - versioni fisse dell'immagine;
   - volumi nominati per i dati persistenti (RabbitMQ, Redis);
-  - Redis con autenticazione a **sola password** (`--requirepass`, senza username/ACL), letta da secret o dalla variabile `Redis__Password`; l'healthcheck si autentica con la stessa password;
-  - `healthcheck` e `depends_on` con `condition: service_healthy`;
+  - Redis con autenticazione a **sola password** (`--requirepass`, senza username/ACL), letta da secret o dalla variabile `Redis__Password`;
+  - nessun `healthcheck` né `depends_on`: i servizi come Redis, RabbitMQ o Mailpit sono container indipendenti dal progetto in sviluppo, e l'app non ne attende lo stato;
   - `restart: unless-stopped` in produzione.
 - **Reti:** rete interna per i servizi di supporto; si pubblica verso l'esterno solo la porta dell'applicazione (o del reverse proxy). Redis e RabbitMQ non espongono mai porte sull'host in produzione (in sviluppo solo se serve, su `127.0.0.1`).
 - **Configurazione e segreti:** variabili d'ambiente tramite `env_file` o `environment`; segreti tramite `secrets` di Compose o file esterni al repository. I `secrets` di Compose arrivano come file in `/run/secrets/` e ASP.NET Core non li legge da solo: come l'app li riceve (provider key-per-file nella configurazione, oppure variabili d'ambiente da un `env_file` fuori dal repository) si **chiede per progetto** e la scelta va nel `CLAUDE.md` (sezione "Note per Claude"). I valori dei segreti non compaiono mai in `environment:` del compose committato. Committa un `.env.example` senza valori reali; `.env` è in `.gitignore`. In `.env.example` compaiono, con valori finti, anche le variabili che sovrascrivono i segnaposto di `appsettings.json` (es. `Redis__Password`, `Jwt__Key`, `Smtp__Username`, `Smtp__Password`, vedi `backend.md` e `security.md`).
 - **Hardening dei servizi dell'applicazione (compose di produzione):** `read_only: true` con `tmpfs` per le sole directory scrivibili necessarie (es. `/tmp`), `cap_drop: [ALL]` aggiungendo solo le capability necessarie e motivate, `pids_limit` impostato. Se un'opzione impedisce il funzionamento, si deroga caso per caso e lo si annota, senza rimuoverla in blocco.
 - **Risorse e log:** limiti di CPU/memoria dove sensato e rotazione dei log (`logging` con `max-size` e `max-file`).
-- **Migrazioni:** servizio dedicato "one-shot" (es. il bundle EF, generato con l'SDK: uno stage `migrations` nel Dockerfile oppure un artefatto della CI, si **chiede per progetto**) che termina prima dell'avvio dell'app, con `depends_on: condition: service_completed_successfully`. Mai applicate dall'app all'avvio.
+- **Migrazioni:** applicate dal codice del backend all'avvio del suo container (nessun servizio one-shot dedicato, nessun `depends_on`). Con più repliche l'applicazione concorrente delle migrazioni va evitata (lock del database fornito da EF Core o replica singola all'avvio).
 - **Primo amministratore:** se il progetto ha utenti, lo step one-shot che lo crea segue le regole di `backend.md` §7 (idempotente, credenziali da `secrets`, mai nei log, non all'avvio dell'app); come viene eseguito (comando o servizio del compose) lo decide il progetto.
 - **Backup del database (da valutare in ogni progetto):** il database è preesistente sul server e il suo backup potrebbe essere già gestito dall'utente. Per questo Claude **chiede a ogni progetto** se generare il servizio di backup qui sotto o se il backup è già coperto sul server, annotando la risposta nel `CLAUDE.md` (voce "Backup"); non lo genera né lo esclude per presunzione. Se va generato, il servizio si collega al database esistente con la stringa di connessione da `secrets`.
   - Servizio "one-shot" `db-backup` nel compose, eseguibile con `docker compose run --rm db-backup`, con script `ops/backup.sh` e `ops/restore.sh` committati.
@@ -52,7 +52,7 @@ Il deploy avviene sempre con `Dockerfile` e `docker-compose`. L'host e la sua co
   - Il README contiene la procedura di ripristino e di prova del ripristino. Claude non esegue mai `restore.sh` su dati reali senza conferma.
   - PITR (pgBackRest) solo se il `CLAUDE.md` fissa un RPO di minuti: va chiesto, non introdotto da soli.
 - **Repliche:** un servizio può avere più repliche solo se rispetta §5b di `backend.md` (nessuno stato locale).
-- **Validazione:** prima di consegnare, `docker compose config` deve passare e l'immagine deve buildare; se possibile avvia lo stack e verifica gli healthcheck.
+- **Validazione:** prima di consegnare, `docker compose config` deve passare e l'immagine deve buildare; se possibile avvia lo stack e verifica che i container partano.
 
 ## Ambienti
 - Ambienti tipici: sviluppo locale (compose + override) e produzione (compose + prod). Se esiste uno staging, usa lo stesso compose con variabili diverse.

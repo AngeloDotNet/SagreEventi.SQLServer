@@ -19,6 +19,10 @@ public interface IEventiService
     Task<int> ApprovaAsync(IReadOnlyCollection<string> ids, string revisore, CancellationToken cancellationToken = default);
     /// <summary>Rejects pending events; an already approved event is withdrawn (Rifiutato + concluded, so clients delete it). The <paramref name="motivo"/> note is optional and is kept only in the database as history. Returns how many were changed.</summary>
     Task<int> RifiutaAsync(IReadOnlyCollection<string> ids, string? motivo, string revisore, CancellationToken cancellationToken = default);
+    /// <summary>Reads what the moderators have still to be told about: the ids of the pending reports not notified yet, and the total of the pending ones.</summary>
+    Task<NotificaModerazione> GetNotificaModerazioneAsync(CancellationToken cancellationToken = default);
+    /// <summary>Marks the given pending reports as notified at <paramref name="notificataIl"/>; the ones already notified keep their date, so the call is idempotent. The modification date is not touched, so clients and cache see no change. Returns how many were marked.</summary>
+    Task<int> SegnaNotificateAsync(IReadOnlyCollection<string> ids, DateTime notificataIl, CancellationToken cancellationToken = default);
     /// <summary>Moderation state of the given ids, as seen by the reporter: a rejection is not revealed (it appears as <c>InAttesa</c>) and the note is never returned. Unknown ids are omitted.</summary>
     Task<List<StatoEventoModel>> GetStatiAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken = default);
 }

@@ -22,4 +22,7 @@ public class Evento
     /// <summary>Email of the reviewer who approved or rejected the event.</summary>
     public string? RevisionatoDa { get; set; }
     public DateTime? DataRevisione { get; set; }
+
+    /// <summary>When the moderators were told, by e-mail, that this report is waiting for review; null until a notice that included it has been sent.</summary>
+    public DateTime? NotificataIl { get; set; }
 }

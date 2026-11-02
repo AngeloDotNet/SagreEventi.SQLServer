@@ -15,7 +15,13 @@ using SagreEventi.Web.Server.Models.Services.Application;
 using SagreEventi.Web.Server.Models.Services.Infrastructure;
 using AltchaOptions = SagreEventi.Web.Server.Options.AltchaOptions;
 using AltchaOptionsValidator = SagreEventi.Web.Server.Options.AltchaOptionsValidator;
+using AppOptions = SagreEventi.Web.Server.Options.AppOptions;
+using AppOptionsValidator = SagreEventi.Web.Server.Options.AppOptionsValidator;
+using ModerazioneOptions = SagreEventi.Web.Server.Options.ModerazioneOptions;
+using ModerazioneOptionsValidator = SagreEventi.Web.Server.Options.ModerazioneOptionsValidator;
 using ScadenzaEventiOptions = SagreEventi.Web.Server.Options.ScadenzaEventiOptions;
+using SmtpOptions = SagreEventi.Web.Server.Options.SmtpOptions;
+using SmtpOptionsValidator = SagreEventi.Web.Server.Options.SmtpOptionsValidator;
 using ZiggyCreatures.Caching.Fusion;
 
 namespace SagreEventi.Web.Server.Extensions;
@@ -73,6 +79,7 @@ public static class ServiceCollectionExtensions
 
         services.Configure<ScadenzaEventiOptions>(configuration.GetSection("Eventi"));
         services.AddHostedService<EventiHostedService>();
+        services.AddHostedService<ModerazioneHostedService>();
         services.AddTransient<IEventiService, EfCoreEventiService>();
 
         // Rate limit on writes (anonymous insert): requests per minute per IP, read from the configuration for each new partition
@@ -110,6 +117,15 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IValidateOptions<AltchaOptions>, AltchaOptionsValidator>();
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IAltchaService, AltchaService>();
+
+        // Moderation notice by e-mail: SMTP server, notice interval and public address of the web app, all validated at startup
+        services.AddOptions<SmtpOptions>().Bind(configuration.GetSection(SmtpOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<SmtpOptions>, SmtpOptionsValidator>();
+        services.AddOptions<ModerazioneOptions>().Bind(configuration.GetSection(ModerazioneOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<ModerazioneOptions>, ModerazioneOptionsValidator>();
+        services.AddOptions<AppOptions>().Bind(configuration.GetSection(AppOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<AppOptions>, AppOptionsValidator>();
+        services.AddSingleton<IEmailSender, MailKitEmailSender>();
 
         ConfiguraForwardedHeaders(services, configuration);
         services.AddIdentityServices();

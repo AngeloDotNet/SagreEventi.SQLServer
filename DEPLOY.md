@@ -102,6 +102,7 @@ Da sistemare:
 - `Identity__Admin__Email` e `Identity__Admin__Password`: credenziali vere dell'admin.
 - `Identity__Editor__*`: valorizzali o lasciali vuoti.
 - `Altcha__HmacKey`: **obbligatorio**, l'API non parte con il segnaposto. Generalo con `openssl rand -hex 32` e non committarlo. Cambiarlo invalida le challenge in corso (i client ne chiedono una nuova da soli).
+- **Rilascio:** aggiorna API e web **insieme** (con il compose unico basta `docker compose pull && docker compose up -d`). La nuova API rifiuta `UpdateEventi` senza l'header `X-Altcha`, e un web nuovo con un'API vecchia non invia perché `GetChallenge` risponde 404: in entrambi i casi falliscono solo gli invii, la lettura continua a funzionare. Un client già installato non invia finché non si aggiorna: l'app controlla le novità ogni ora e quando torna in primo piano, e dopo un rifiuto anti-bot invita ad aggiornare con l'icona in alto.
 - `ForwardedHeaders__KnownNetworks__0`:
   - compose unico: è la subnet della rete che il compose crea (default `172.29.250.0/24`); cambiala solo se è già usata da un'altra rete dell'host (`docker network ls` e `docker network inspect`);
   - compose separati: la subnet reale di `docker-net`:

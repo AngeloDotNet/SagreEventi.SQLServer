@@ -134,5 +134,62 @@ describe('AppComponent navigation', () => {
       expect(etichette(voci)).toEqual(['Accedi', 'Le mie', 'Gestione', 'Informazioni']);
       expect(voci.filter((v) => v.classList.contains('solo-mobile')).map((v) => v.textContent?.trim())).toEqual(['Le mie']);
     });
+
+    it('shows "Gestione (N)" at every width for a moderator, without own reports', async () => {
+      modificaConsentita.set(true);
+      inAttesa.set(2);
+      crea();
+
+      const voci = await apriMenu();
+
+      expect(etichette(voci)).toEqual(['Accedi', 'Gestione (2)', 'Informazioni']);
+      expect(voci.some((v) => v.classList.contains('solo-mobile'))).toBe(false);
+    });
+  });
+
+  describe('badge on the "⋮" button', () => {
+    const badge = (el: HTMLElement) => el.querySelector('.menu-badge');
+    const nomeBottone = (el: HTMLElement) => el.querySelector('.menu-azioni button')?.getAttribute('aria-label');
+
+    it('shows the number of reports to moderate, and announces it in the button name', () => {
+      modificaConsentita.set(true);
+      inAttesa.set(3);
+      const el = crea();
+
+      expect(badge(el)?.textContent?.trim()).toBe('3');
+      expect(nomeBottone(el)).toBe('Menu, 3 segnalazioni da moderare');
+    });
+
+    it('uses the singular for one report', () => {
+      modificaConsentita.set(true);
+      inAttesa.set(1);
+
+      expect(nomeBottone(crea())).toBe('Menu, 1 segnalazione da moderare');
+    });
+
+    it('is absent when nothing is waiting for review', () => {
+      modificaConsentita.set(true);
+      inAttesa.set(0);
+      const el = crea();
+
+      expect(badge(el)).toBeNull();
+      expect(nomeBottone(el)).toBe('Menu');
+    });
+
+    it('is absent when the count is not known yet', () => {
+      modificaConsentita.set(true);
+      inAttesa.set(null);
+
+      expect(badge(crea())).toBeNull();
+    });
+
+    it('is never shown to who cannot moderate, even if a count is left over', () => {
+      modificaConsentita.set(false);
+      inAttesa.set(5);
+      const el = crea();
+
+      expect(badge(el)).toBeNull();
+      expect(nomeBottone(el)).toBe('Menu');
+    });
   });
 });

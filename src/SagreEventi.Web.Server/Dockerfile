@@ -4,10 +4,10 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Restore first (cached while the project files do not change)
-COPY Directory.Build.props ./
-COPY src/SagreEventi.Shared/SagreEventi.Shared.csproj src/SagreEventi.Shared/
-COPY src/SagreEventi.Web.Server/SagreEventi.Web.Server.csproj src/SagreEventi.Web.Server/
-RUN dotnet restore src/SagreEventi.Web.Server/SagreEventi.Web.Server.csproj
+COPY Directory.Build.props Directory.Packages.props ./
+COPY src/SagreEventi.Shared/SagreEventi.Shared.csproj src/SagreEventi.Shared/packages.lock.json src/SagreEventi.Shared/
+COPY src/SagreEventi.Web.Server/SagreEventi.Web.Server.csproj src/SagreEventi.Web.Server/packages.lock.json src/SagreEventi.Web.Server/
+RUN dotnet restore --locked-mode src/SagreEventi.Web.Server/SagreEventi.Web.Server.csproj
 
 COPY src/SagreEventi.Shared/ src/SagreEventi.Shared/
 COPY src/SagreEventi.Web.Server/ src/SagreEventi.Web.Server/

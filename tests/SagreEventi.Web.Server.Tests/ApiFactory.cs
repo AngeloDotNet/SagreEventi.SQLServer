@@ -43,6 +43,8 @@ public class ApiFactory : WebApplicationFactory<Program>
             // Real anti-bot verification with a cheap difficulty (the minimum allowed): the proofs are solved for real
             ["Altcha:HmacKey"] = AltchaTestHelper.TestKey,
             ["Altcha:MaxNumber"] = "1000",
+            ["Smtp:Host"] = "smtp.test.example",
+            ["App:PublicBaseUrl"] = "https://sagre.test.example",
         }));
 
         builder.ConfigureServices(services =>

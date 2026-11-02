@@ -12,6 +12,7 @@ import { RevisioneService } from './core/revisione.service';
 import { Tema, ThemeService, inStagione } from './core/theme.service';
 import { AggiornamentoAppService } from './core/aggiornamento-app.service';
 import { ErroreNavigazioneService } from './core/errore-navigazione.service';
+import { SincronizzazioneAutomaticaService } from './core/sincronizzazione-automatica.service';
 import { SyncStatusComponent } from './shared/sync-status.component';
 
 /** Entries of the theme picker. */
@@ -100,6 +101,8 @@ export class AppComponent {
   constructor() {
     // Starts listening for failed navigations (toast to the user)
     inject(ErroreNavigazioneService);
+    // Starts the automatic synchronization (back to the foreground, and every few minutes while the page is visible)
+    inject(SincronizzazioneAutomaticaService);
 
     if (this.store.online()) void this.store.sincronizza();
 

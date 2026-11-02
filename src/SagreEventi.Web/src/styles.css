@@ -146,6 +146,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 0.25rem 0; width: 100
 
 .nav-desktop { display: none; gap: 0.25rem; margin-left: 1.5rem; }
 .nav-link {
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -154,6 +155,23 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 0.25rem 0; width: 100
   text-decoration: none;
   font-weight: 600;
   color: var(--ink-soft);
+}
+/* Counter on the "⋮" button: reports waiting for review (moderators only). It is decorative: the button name announces it */
+.menu-con-badge { position: relative; display: inline-flex; }
+.menu-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.3rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
+  font: 700 0.68rem/1 var(--font-body);
+  pointer-events: none;
 }
 .nav-link:hover { color: var(--ink); background: var(--line); }
 .nav-link.attivo { color: var(--p-primary-color); background: var(--p-highlight-background); }

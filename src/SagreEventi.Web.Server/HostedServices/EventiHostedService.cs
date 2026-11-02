@@ -8,9 +8,10 @@ namespace SagreEventi.Web.Server.HostedServices;
 /// Concludes events whose end date has passed: only the server decides the conclusion.
 /// One cycle at a time (the <see cref="PeriodicTimer"/> does not overlap); the interval follows the configuration, also at runtime.
 /// </summary>
-public class EventiHostedService(
+public sealed class EventiHostedService(
     IServiceScopeFactory serviceScopeFactory,
     IOptionsMonitor<ScadenzaEventiOptions> options,
+    TimeProvider timeProvider,
     ILogger<EventiHostedService> logger) : BackgroundService
 {
     /// <summary>Runs an expiry cycle immediately and then at every configured interval until the host stops.</summary>
@@ -47,7 +48,7 @@ public class EventiHostedService(
             using var serviceScope = serviceScopeFactory.CreateScope();
             var eventiService = serviceScope.ServiceProvider.GetRequiredService<IEventiService>();
 
-            var conclusi = await eventiService.ConcludiScadutiAsync(DateTime.UtcNow, cancellationToken);
+            var conclusi = await eventiService.ConcludiScadutiAsync(timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
             if (conclusi > 0)
             {
                 logger.LogInformation("Scadenza eventi: {Conclusi} eventi conclusi", conclusi);

@@ -127,7 +127,7 @@ Un evento ha questa forma (JSON, camelCase):
 
 ### Prerequisiti
 
-- .NET 10 SDK
+- .NET 10 SDK (versione indicata in `global.json`)
 - Un'istanza di SQL Server
 - Node.js `^20.19`, `^22.12` o `^24` per il client Angular
 - Docker con Compose v2, solo per il deploy (vedi [DEPLOY.md](DEPLOY.md))
@@ -185,8 +185,12 @@ Apri `http://localhost:4200`. In sviluppo le richieste a `/api` sono inoltrate a
 dotnet test
 cd src/SagreEventi.Web
 npm test            # unit test del client (Vitest)
+npm run lint        # ESLint
+npm run format:check # Prettier (controllo, non è imposto sul codice esistente)
 npm run build
 ```
+
+La build .NET tratta gli avvisi come errori (`TreatWarningsAsErrors`). Le versioni dei pacchetti NuGet sono centralizzate in `Directory.Packages.props` e i file `packages.lock.json` vanno committati: il Dockerfile dell'API fa il restore con `--locked-mode`, quindi dopo ogni aggiornamento di un pacchetto rigenera i lock file (`dotnet restore --force-evaluate`).
 
 I test dell'API (xUnit, SQLite in memoria) coprono eventi, moderazione, utenti, login, limiti di frequenza, header inoltrati, CORS e input malevoli. I test del client (Vitest con jsdom, `*.spec.ts` accanto ai sorgenti in `src/app/core/`) coprono gli helper puri, l'esportazione `.ics`, l'accesso e il rinnovo del token, l'interceptor HTTP, lo store offline e la sua sincronizzazione, e i client HTTP; `npm run test:coverage` stampa un rapporto di copertura (informativo, nessuna soglia). La build di produzione del client è creata in `dist/sagre-eventi-web/browser`; servila con un qualsiasi host statico che per i percorsi sconosciuti ripieghi su `index.html`.
 

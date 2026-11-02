@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using SagreEventi.Web.Server.Models.Identity;
 using SagreEventi.Web.Server.Models.Entities;
+using SagreEventi.Web.Server.Models.Identity;
 
 namespace SagreEventi.Web.Server.Models.Services.Infrastructure;
 
 /// <summary>Application database context: events plus the ASP.NET Core Identity tables.</summary>
-public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<ApplicationUser>(options)
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Evento> Eventi { get; set; }
 

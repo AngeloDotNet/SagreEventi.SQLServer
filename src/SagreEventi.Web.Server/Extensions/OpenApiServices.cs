@@ -3,8 +3,10 @@ using Microsoft.OpenApi;
 
 namespace SagreEventi.Web.Server.Extensions;
 
+/// <summary>Registers the OpenAPI document (exposed only in Development).</summary>
 public static class OpenApiServices
 {
+    /// <summary>Name of the bearer security scheme.</summary>
     public const string BearerScheme = "Bearer";
 
     /// <summary>Registers the OpenAPI document (<c>v1</c>) with API info and the Bearer security scheme.</summary>

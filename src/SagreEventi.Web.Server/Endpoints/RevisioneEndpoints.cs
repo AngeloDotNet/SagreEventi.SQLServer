@@ -8,8 +8,11 @@ namespace SagreEventi.Web.Server.Endpoints;
 /// <summary>Review of reported events: reserved to those with the <c>PuoModificare</c> policy (Admin and Editor).</summary>
 public static class RevisioneEndpoints
 {
+    /// <summary>Maximum number of ids in an approve or reject request.</summary>
     public const int MaxIdPerRichiesta = 100;
+    /// <summary>Maximum number of pending events returned for review.</summary>
     public const int MaxEventiDaRivedere = 200;
+    /// <summary>Maximum length of the rejection reason.</summary>
     public const int MaxMotivoLength = 500;
 
     /// <summary>Maps the review endpoints (list to review, concluded events for the Admin, approve, reject) under <c>/api/Eventi/Revisione</c>.</summary>

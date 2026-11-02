@@ -3,6 +3,7 @@ using SagreEventi.Web.Server.Extensions;
 
 namespace SagreEventi.Web.Server;
 
+/// <summary>Application host; public so that the integration tests can use it with <c>WebApplicationFactory</c>.</summary>
 public class Program
 {
     /// <summary>Application entry point: configures the services and the HTTP pipeline, then runs the API.</summary>

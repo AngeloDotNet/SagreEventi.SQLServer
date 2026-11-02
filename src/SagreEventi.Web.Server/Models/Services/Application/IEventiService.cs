@@ -2,6 +2,7 @@
 
 namespace SagreEventi.Web.Server.Models.Services.Application;
 
+/// <summary>Application service for the events: public reads, anonymous reports, review and expiry.</summary>
 public interface IEventiService
 {
     /// <summary>Returns the publicly visible events modified after <paramref name="since"/> (approved ones plus tombstones of withdrawn ones), served through the cache.</summary>
@@ -23,6 +24,7 @@ public interface IEventiService
     Task<NotificaModerazione> GetNotificaModerazioneAsync(CancellationToken cancellationToken = default);
     /// <summary>Marks the given pending reports as notified at <paramref name="notificataIl"/>; the ones already notified keep their date, so the call is idempotent. The modification date is not touched, so clients and cache see no change. Returns how many were marked.</summary>
     Task<int> SegnaNotificateAsync(IReadOnlyCollection<string> ids, DateTime notificataIl, CancellationToken cancellationToken = default);
+
     /// <summary>Moderation state of the given ids, as seen by the reporter: a rejection is not revealed (it appears as <c>InAttesa</c>) and the note is never returned. Unknown ids are omitted.</summary>
     Task<List<StatoEventoModel>> GetStatiAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken = default);
 }

@@ -1,8 +1,9 @@
 namespace SagreEventi.Web.Server.Options;
 
 /// <summary>Automatic event expiry, <c>Eventi</c> section of appsettings. Read through <c>IOptionsMonitor</c>: changes also apply at runtime.</summary>
-public class ScadenzaEventiOptions
+public sealed class ScadenzaEventiOptions
 {
+    /// <summary>Default interval between two expiry cycles, in minutes.</summary>
     public const double IntervalloMinutiDefault = 60;
 
     /// <summary>How often, in minutes, the service concludes events whose end date has passed (fractions allowed). Non-positive values fall back to the default.</summary>

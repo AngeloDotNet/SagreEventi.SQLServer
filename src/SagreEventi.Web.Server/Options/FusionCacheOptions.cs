@@ -2,12 +2,14 @@
 
 namespace SagreEventi.Web.Server.Options;
 
-public class FusionCacheOptions
+/// <summary>Cache options bound from the <c>FusionCache</c> configuration section.</summary>
+public sealed class FusionCacheOptions
 {
     public FusionCacheEntryOptions DefaultEntryOptions { get; set; } = new();
 }
 
-public class FusionCacheEntryOptions
+/// <summary>Default options of a cache entry.</summary>
+public sealed class FusionCacheEntryOptions
 {
     public TimeSpan Duration { get; set; }
     public CacheItemPriority Priority { get; set; }

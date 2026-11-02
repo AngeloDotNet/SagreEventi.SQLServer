@@ -4,6 +4,7 @@ using SagreEventi.Web.Server.Models.Entities;
 
 namespace SagreEventi.Web.Server.Models.Mapping;
 
+/// <summary>Manual mapping between the event entity and its DTOs, and the public visibility filter.</summary>
 public static class EventoMappings
 {
     /// <summary>SQL-translatable projection from entity to DTO.</summary>

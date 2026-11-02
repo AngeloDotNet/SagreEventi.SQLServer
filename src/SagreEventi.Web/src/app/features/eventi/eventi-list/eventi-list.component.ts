@@ -11,7 +11,7 @@ import { normalizzaTesto, parseLocalDate, statoEvento } from '../../../core/even
 import { EmptyStateComponent } from '../../../shared/empty-state.component';
 import { EventoCardComponent } from '../../../shared/evento-card.component';
 
-type Periodo = 'programma' | 'in-corso' | 'in-arrivo' | 'tutti';
+type Periodo = 'tutti' | 'in-corso' | 'in-arrivo';
 type Ordine = 'data' | 'nome' | 'citta';
 type Vista = 'grid' | 'list';
 
@@ -37,15 +37,14 @@ export class EventiListComponent {
 
   protected readonly query = signal('');
   protected readonly citta = signal<string | null>(null);
-  protected readonly periodo = signal<Periodo>('programma');
+  protected readonly periodo = signal<Periodo>('tutti');
   protected readonly ordine = signal<Ordine>('data');
   protected readonly vista = signal<Vista>('grid');
 
   protected readonly opzioniPeriodo: { label: string; value: Periodo }[] = [
-    { label: 'In programma', value: 'programma' },
+    { label: 'Tutti', value: 'tutti' },
     { label: 'In corso', value: 'in-corso' },
     { label: 'In arrivo', value: 'in-arrivo' },
-    { label: 'Anche terminati', value: 'tutti' },
   ];
 
   protected readonly opzioniOrdine: { label: string; value: Ordine }[] = [
@@ -55,7 +54,7 @@ export class EventiListComponent {
   ];
 
   protected readonly filtriAttivi = computed(
-    () => this.query().trim() !== '' || this.citta() !== null || this.periodo() !== 'programma',
+    () => this.query().trim() !== '' || this.citta() !== null || this.periodo() !== 'tutti',
   );
 
   protected readonly risultati = computed(() => {
@@ -65,7 +64,7 @@ export class EventiListComponent {
 
     const lista = this.store.eventi().filter((e) => {
       const stato = statoEvento(e);
-      if (periodo === 'programma' && stato === 'terminato') return false;
+      if (periodo === 'tutti' && stato === 'terminato') return false;
       if (periodo === 'in-corso' && stato !== 'in-corso') return false;
       if (periodo === 'in-arrivo' && stato !== 'in-arrivo') return false;
       if (citta && e.cittaEvento.trim() !== citta) return false;
@@ -88,6 +87,6 @@ export class EventiListComponent {
   protected azzera(): void {
     this.query.set('');
     this.citta.set(null);
-    this.periodo.set('programma');
+    this.periodo.set('tutti');
   }
 }

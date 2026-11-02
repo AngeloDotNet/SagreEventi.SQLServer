@@ -27,6 +27,9 @@ public class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache) : I
     /// <inheritdoc />
     public async Task<List<EventoModel>> GetEventiAsync(DateTime since, CancellationToken cancellationToken)
     {
+        // 'since' is chosen by the client: rounding it down bounds the number of cache keys (the client merges the few events it already has)
+        since = ArrotondaAlMinuto(since);
+
         // Get the events modified after the 'since' date using the FusionCache cache (with Cache Stampede Protection + FailSafe)
         return await cache.GetOrSetAsync($"eventi_cache_key:{since.Ticks}", _
             => dbContext.Eventi.Where(EventoMappings.VisibilePubblico).Where(x => x.DataOraUltimaModifica > since)
@@ -41,6 +44,10 @@ public class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache) : I
                     options.JitterMaxDuration = TimeSpan.FromSeconds(30);
                 }, tags: [CacheTag], token: cancellationToken);
     }
+
+    /// <summary>Rounds a date down to the minute, keeping its <see cref="DateTime.Kind"/>.</summary>
+    public static DateTime ArrotondaAlMinuto(DateTime value)
+        => new(value.Ticks - value.Ticks % TimeSpan.TicksPerMinute, value.Kind);
 
     /// <inheritdoc />
     public async Task<int> ConcludiScadutiAsync(DateTime adesso, CancellationToken cancellationToken)

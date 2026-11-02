@@ -1,0 +1,32 @@
+# Regole Backend — Invio Email (modulo opzionale)
+
+> Richiede `core.md` e `backend.md`. Si importa solo nei progetti con backend che inviano email. Per messaggistica, cache e job vedi `backend-infra.md` e `backend.md`.
+
+## 1. Invio Email
+Vale quando il backend deve inviare email.
+- **Libreria: chiedi conferma ogni volta.** Proponi sempre **MailKit** (MIT) come scelta preferita, ma non darla per scontata: a ogni progetto che prevede invio email attendi la conferma prima di procedere. Se l'utente indica un'altra libreria, verifica licenza gratuita e permissiva (vedi `core.md` §3). Servizi di invio a pagamento o cloud proprietari (SendGrid, Mailgun, Amazon SES, Microsoft Graph e simili) sono esclusi.
+- **Configurazione:** sezione `Smtp` di `appsettings.json`, letta tramite Options con `ValidateOnStart`. La struttura di riferimento per MailKit è la seguente, con valori **fittizi** (mai dati reali nel file committato):
+  ```json
+  "Smtp": {
+    "Host": "smtps.example.com",
+    "Port": 465,
+    "Security": "Auto",
+    "Username": "username@example.com",
+    "Password": "password@example.com",
+    "Sender": "NoReply <noreply@example.com>"
+  }
+  ```
+  `Security` corrisponde alle opzioni di connessione di MailKit (`SecureSocketOptions`, es. `Auto`). Salvo cambi di pacchetto NuGet o di configurazione nello specifico progetto, usa questa struttura; ogni progetto con invio email può averne una diversa, quindi se il `CLAUDE.md` o l'utente la modificano, prevale quella.
+- **TLS verso il server SMTP:** la validazione del certificato è sempre attiva; vietato disattivarla nel codice (es. un callback che accetta ogni certificato). Con un server di prova si usa un certificato valido o l'opzione `Smtp:Security` in configurazione. Una connessione senza TLS è ammessa solo verso un SMTP locale di prova e solo in sviluppo.
+- **Credenziali reali:** `Username` e `Password` reali non stanno mai nel repository. In produzione li forniscono le variabili d'ambiente (`Smtp__Username`, `Smtp__Password`) o un `secret` Docker, che sovrascrivono il file; vanno elencati in `.env.example`. La password SMTP rientra nella rotazione dei segreti (vedi `security.md`).
+- **Astrazione obbligatoria:** l'implementazione, MailKit compreso, usa sempre l'interfaccia `IEmailSender`, con l'implementazione concreta (es. `MailKitEmailSender`) nell'infrastruttura. Il resto del codice dipende solo dall'interfaccia, mai da tipi MailKit (`SmtpClient`, `MimeMessage`) né dalla sezione `Smtp`, così cambiare gestore di invio richiede di sostituire una sola classe e la registrazione DI. Il contratto dell'interfaccia non espone dettagli del trasporto (destinatari, oggetto, corpo e allegati sono tipi propri). È sostituibile e simulabile nei test; nei test e in sviluppo non si inviano email reali. I metodi accettano un `CancellationToken`.
+- **Test:** negli integration test (`backend.md` §4.5) `IEmailSender` è sostituito da un'implementazione fittizia che registra i messaggi; i test verificano destinatario, oggetto e presenza del link, mai un invio reale.
+- **Health check:** l'SMTP non entra in `/health/ready` (`core.md` §5): un invio fallito si gestisce con il retry o l'outbox decisi per il progetto e si registra nei log.
+- **Punto di partenza per MailKit:** se l'utente conferma MailKit, l'implementazione concreta `MailKitEmailSender` parte dal codice di https://github.com/AngeloDotNet/MailKit.Custom/blob/master/src/MailKit.Custom/Services/MailKitEmailSender.cs. Non va copiato as is: è ammesso (e atteso, se serve) adattarlo con refactoring e migliorie alle esigenze del progetto, mantenendo il rispetto di `IEmailSender`, della sezione `Smtp` e delle regole di questo paragrafo.
+- **Server di posta non reale (test e sviluppo):** chiedi **ogni volta** se usare **Mailtrap** come server SMTP di prova, senza presumerlo. Mailtrap è un servizio cloud ammesso come eccezione documentata in `core.md` §3 (solo test e sviluppo); limiti e licenza gratuita del momento li verifica l'utente. Le sue credenziali (sezione `Smtp` dell'ambiente di sviluppo) seguono le stesse regole dei segreti. Se l'utente preferisce un'alternativa self-hosted nel compose, verifica la licenza prima di proporla.
+- **Invio non bloccante:** se è previsto l'invio email, la richiesta HTTP non attende mai l'invio. **Chiedi conferma** su come disaccoppiarlo, senza presumere: coda **RabbitMQ**, oppure sviluppo custom di un job in background (`BackgroundService` di .NET, hosted service o Coravel). Le email sono solo uno dei possibili usi dei job in background: per la scelta di tipo di job, strumento e retry valgono le domande di `backend.md` §2 "Lavori in background". Qualunque sia la strada: idempotenza (vedi `backend-infra.md` e `backend.md` §5b) e mai fire-and-forget.
+- **Outbox e retry per le email:** se l'invio email passa da un job in background, **chiedi** ogni volta se implementare anche un sistema **outbox** (messaggio salvato su database nella stessa transazione dell'operazione e inviato dal job) e/o un **retry** dei tentativi falliti, e con quale politica (tentativi, backoff, stato finale dopo l'ultimo fallimento). Non presumerlo: senza outbox l'email può andare persa se il processo si ferma tra l'operazione e l'invio.
+- **Log e dati:** nei log mai password, token o contenuto sensibile del messaggio; destinatari e oggetto solo se necessario. Link di conferma o reset password con token a scadenza breve e monouso.
+- **Dati dell'utente nel messaggio:** gli indirizzi si validano con un parser di indirizzi, non con una regex; destinatario, oggetto e altri header non accettano ritorni a capo (iniezione di header). Nei template HTML i valori dell'utente sono sempre codificati (HTML encode), tranne i soli frammenti HTML costruiti dall'applicazione.
+- **Avvisi di sicurezza (`security.md`):** l'avviso al titolare quando cambiano password o indirizzo email parte dallo stesso `IEmailSender` e dallo stesso meccanismo di disaccoppiamento delle altre email. Nel messaggio non compaiono la nuova password, né token, né il nuovo indirizzo completo; per il cambio email l'avviso va al vecchio indirizzo.
+- **Indirizzo base dei link:** i link nelle email si costruiscono a partire da un valore di configurazione (es. `App:PublicBaseUrl`, letto tramite Options con `ValidateOnStart`, valore reale da variabile d'ambiente e voce in `.env.example`), mai dall'header `Host` o da altri dati della richiesta in arrivo: un host falsificato farebbe puntare il link a un dominio dell'attaccante.

@@ -79,6 +79,7 @@ public static class ServiceCollectionExtensions
 
         services.Configure<ScadenzaEventiOptions>(configuration.GetSection("Eventi"));
         services.AddHostedService<EventiHostedService>();
+        services.AddHostedService<ModerazioneHostedService>();
         services.AddTransient<IEventiService, EfCoreEventiService>();
 
         // Rate limit on writes (anonymous insert): requests per minute per IP, read from the configuration for each new partition

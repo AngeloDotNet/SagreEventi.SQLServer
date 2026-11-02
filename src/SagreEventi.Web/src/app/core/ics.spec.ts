@@ -107,22 +107,23 @@ describe('ics', () => {
       const creaUrl = vi.fn().mockReturnValue('blob:fake');
       const revocaUrl = vi.fn();
       vi.stubGlobal('URL', { createObjectURL: creaUrl, revokeObjectURL: revocaUrl });
-      let link: HTMLAnchorElement | undefined;
       let presenteAlClick = false;
-      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-        link = this;
+      const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
         presenteAlClick = document.body.contains(this);
       });
 
       scaricaFile('evento.ics', 'BEGIN', 'text/calendar');
 
       expect(creaUrl).toHaveBeenCalledOnce();
+      expect(click).toHaveBeenCalledOnce();
+      // The mock keeps the element each call was made on
+      const link = click.mock.contexts[0] as HTMLAnchorElement;
       const blob = creaUrl.mock.calls[0][0] as Blob;
       expect(blob.type).toBe('text/calendar');
-      expect(link?.download).toBe('evento.ics');
-      expect(link?.getAttribute('href')).toBe('blob:fake');
+      expect(link.download).toBe('evento.ics');
+      expect(link.getAttribute('href')).toBe('blob:fake');
       expect(presenteAlClick).toBe(true);
-      expect(document.body.contains(link ?? null)).toBe(false);
+      expect(document.body.contains(link)).toBe(false);
 
       expect(revocaUrl).not.toHaveBeenCalled();
       vi.advanceTimersByTime(1000);

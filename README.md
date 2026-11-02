@@ -185,6 +185,8 @@ Apri `http://localhost:4200`. In sviluppo le richieste a `/api` sono inoltrate a
 dotnet test
 cd src/SagreEventi.Web
 npm test            # unit test del client (Vitest)
+npm run lint        # ESLint
+npm run format:check # Prettier (controllo, non è imposto sul codice esistente)
 npm run build
 ```
 

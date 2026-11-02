@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using SagreEventi.Web.Server.HostedServices;
+using SagreEventi.Web.Server.Models.Services.Application;
 using SagreEventi.Web.Server.Models.Services.Infrastructure;
 
 namespace SagreEventi.Web.Server.Tests;
@@ -43,6 +44,8 @@ public class ApiFactory : WebApplicationFactory<Program>
             // Real anti-bot verification with a cheap difficulty (the minimum allowed): the proofs are solved for real
             ["Altcha:HmacKey"] = AltchaTestHelper.TestKey,
             ["Altcha:MaxNumber"] = "1000",
+            ["Smtp:Host"] = "smtp.test.example",
+            ["App:PublicBaseUrl"] = "https://sagre.test.example",
         }));
 
         builder.ConfigureServices(services =>
@@ -69,6 +72,16 @@ public class ApiFactory : WebApplicationFactory<Program>
             {
                 services.Remove(d);
             }
+
+            // Same reason for the moderation notice job: the tests run its cycle by hand, with a fake sender that never sends a real mail
+            foreach (var d in services.Where(d => d.ImplementationType == typeof(ModerazioneHostedService)).ToList())
+            {
+                services.Remove(d);
+            }
+
+            services.RemoveAll<IEmailSender>();
+            services.AddSingleton<FakeEmailSender>();
+            services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
 
             services.AddDbContext<AppDbContext>(options => options.UseSqlite(connection));
 

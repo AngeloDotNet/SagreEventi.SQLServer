@@ -204,6 +204,39 @@ public class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache) : I
     }
 
     /// <inheritdoc />
+    public async Task<NotificaModerazione> GetNotificaModerazioneAsync(CancellationToken cancellationToken)
+    {
+        // Same criterion as the "Gestione" counter (every report in state InAttesa), so the number in the e-mail matches the one in the app
+        var inAttesa = dbContext.Eventi.AsNoTracking().Where(x => x.Stato == StatoModerazione.InAttesa);
+        var idNuove = await inAttesa.Where(x => x.NotificataIl == null).OrderBy(x => x.DataOraUltimaModifica).ThenBy(x => x.Id)
+            .Select(x => x.Id).ToListAsync(cancellationToken);
+        var totale = await inAttesa.CountAsync(cancellationToken);
+
+        return new NotificaModerazione(idNuove, totale);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> SegnaNotificateAsync(IReadOnlyCollection<string> ids, DateTime notificataIl, CancellationToken cancellationToken)
+    {
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        var eventi = await dbContext.Eventi.Where(x => ids.Contains(x.Id) && x.Stato == StatoModerazione.InAttesa && x.NotificataIl == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var evento in eventi)
+        {
+            // DataOraUltimaModifica stays as it is: this is bookkeeping, not a change clients should download
+            evento.NotificataIl = notificataIl;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return eventi.Count;
+    }
+
+    /// <inheritdoc />
     public async Task<List<StatoEventoModel>> GetStatiAsync(IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
     {
         return await dbContext.Eventi.AsNoTracking().Where(x => ids.Contains(x.Id))

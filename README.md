@@ -36,7 +36,7 @@ La soluzione ha un'API ASP.NET Core (solo API, nessuna interfaccia ospitata) e u
 | Progetto | Responsabilità |
 |---|---|
 | `src/SagreEventi.Shared` | Modelli condivisi (`EventoModel`, DTO di moderazione) |
-| `src/SagreEventi.Web.Server` | Minimal API ASP.NET Core (.NET 10): endpoint, Identity, migrazioni EF Core, FusionCache, servizio in background che fa scadere gli eventi |
+| `src/SagreEventi.Web.Server` | Minimal API ASP.NET Core (.NET 10): endpoint, Identity, migrazioni EF Core, FusionCache, servizi in background (scadenza degli eventi e avviso email ai moderatori con MailKit) |
 | `src/SagreEventi.Web` | Client Angular 21 (componenti standalone, signal, zoneless) con PrimeNG e un preset Aura personalizzato |
 | `tests/SagreEventi.Web.Server.Tests` | Test di integrazione dell'API (xUnit, SQLite in memoria) |
 | `src/SagreEventi.Web/src/app/core/*.spec.ts` | Unit test del client (Vitest, jsdom) |
@@ -55,6 +55,12 @@ Perché questo stack:
 ### Moderazione
 
 Gli eventi hanno tre stati: `InAttesa` (predefinito per le segnalazioni anonime), `Approvato` e `Rifiutato`. `GetEventi` restituisce solo gli eventi approvati e il server non si fida mai di uno stato inviato da un client. Un evento rifiutato viene conservato con una nota facoltativa, visibile solo ad `Admin` ed `Editor`: a chi l'ha segnalato non viene detto nulla e lo vede ancora come in attesa. Ritirare un evento approvato lo trasforma in un evento rifiutato e concluso, che i client usano per eliminare la copia locale alla sincronizzazione successiva.
+
+#### Avviso via email ai moderatori
+
+Un job periodico (`ModerazioneHostedService`) manda un riepilogo agli utenti **Admin ed Editor** quando ci sono segnalazioni in attesa che nessun avviso ha ancora incluso. Una mail di testo per destinatario (gli indirizzi sono quelli degli utenti di Identity), con **solo i numeri** («3 nuove segnalazioni da moderare, 12 in attesa in totale») e il link alla pagina di revisione: il testo delle segnalazioni, che non è affidabile, non entra mai nella mail. Il link è costruito da `App:PublicBaseUrl`, mai dall'header `Host`. Una segnalazione viene marcata come notificata (colonna `Eventi.NotificataIl`) solo dopo che almeno una mail è stata consegnata: se l'invio fallisce, si riprova al giro successivo. Al primo avvio dopo l'aggiornamento vengono notificate tutte le segnalazioni già in attesa. L'invio usa MailKit (MIT) con la validazione del certificato TLS sempre attiva; l'API non parte fuori da Development senza un SMTP e un indirizzo pubblico reali. Un solo processo per volta: con più repliche ogni replica manderebbe la propria mail.
+
+Le impostazioni (`Smtp:*`, `Moderazione:AvvisoIntervalloMinuti`, `App:PublicBaseUrl`) sono nella tabella della sezione «Configurazione».
 
 ### Protezione anti-bot
 
@@ -211,6 +217,10 @@ Le impostazioni possono essere date anche come variabili d'ambiente, con `__` co
 | `Eventi:MaxPerRichiesta`, `Eventi:RichiestePutAlMinuto` | Limiti di scrittura anonima: eventi per `PUT` (20) e richieste `PUT` al minuto per IP (10) |
 | `Altcha:HmacKey` | Segreto che firma le challenge anti-bot (min. 32 caratteri; obbligatorio fuori da Development, mai nel repository) |
 | `Altcha:MaxNumber`, `Altcha:ChallengeValidityMinutes` | Difficoltà (300000) e validità in minuti (10) della challenge |
+| `Smtp:Host`, `Smtp:Port`, `Smtp:Security` | Server SMTP per le email ai moderatori (porta 587 e `Auto` di default; obbligatorio fuori da Development, l'API non parte con il segnaposto). `Smtp:Security`: `Auto`, `None`, `StartTls`, `SslOnConnect`, `StartTlsWhenAvailable`; `None` (senza TLS) e `StartTlsWhenAvailable` (può ripiegare sul testo in chiaro) sono accettati solo in Development, per un SMTP locale di prova; altrove l'API non parte. Se questo divieto crea problemi con il tuo provider di posta, apri una issue: verrà gestita con uno sviluppo ad hoc, senza allentare la regola a mano |
+| `Smtp:Username`, `Smtp:Password`, `Smtp:Sender` | Credenziali (opzionali, ma insieme; mai nel repository) e mittente (`Nome <indirizzo>`) |
+| `Moderazione:AvvisoIntervalloMinuti` | Minuti tra due avvisi ai moderatori (60 di default, minimo 5; si applica anche a runtime) |
+| `App:PublicBaseUrl` | Indirizzo pubblico dell'app (`https`, senza credenziali né query): base dei link nelle email; obbligatorio fuori da Development |
 | `Eventi:RichiesteChallengeAlMinuto` | Richieste `GetChallenge` al minuto per IP (30) |
 | `Eventi:RichiesteStatiAlMinuto` | Richieste `GetStati` al minuto per IP (30) |
 | `Eventi:ScadenzaIntervalloMinuti` | Minuti tra due esecuzioni della scadenza automatica (60 di default) |

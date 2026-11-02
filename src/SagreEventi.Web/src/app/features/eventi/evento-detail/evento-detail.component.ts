@@ -15,6 +15,7 @@ import {
   visualEvento,
 } from '../../../core/evento-utils';
 import { buildIcs, nomeFileSicuro, scaricaFile } from '../../../core/ics';
+import { primoLink, segmentaTesto } from '../../../core/link-utils';
 import { EmptyStateComponent } from '../../../shared/empty-state.component';
 
 @Component({
@@ -60,6 +61,10 @@ export class EventoDetailComponent {
     const e = this.evento();
     return e ? formatDataLunga(e.dataFineEvento) : '';
   });
+  /** The description split into plain text and links, so the template can draw each link as an anchor (never as HTML). */
+  protected readonly descrizione = computed(() => segmentaTesto(this.evento()?.descrizioneEvento ?? ''));
+  /** First link of the description: it also becomes a button next to the other actions. */
+  protected readonly linkPrincipale = computed(() => primoLink(this.descrizione()));
   protected readonly urlMappa = computed(() => {
     const e = this.evento();
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e?.cittaEvento ?? '')}`;

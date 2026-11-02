@@ -44,7 +44,6 @@
 - Limiti su dimensione del body e timeout delle richieste.
 - Validazione server-side SEMPRE; il client non è mai considerato affidabile.
 - **Ogni input esterno è non fidato, validato e sanificato:** anche header, query string, parametri di route, cookie e body; allow-list e limiti di lunghezza e formato, mai lista di divieti.
-- **Health check (`/health/live`, `/health/ready`, vedi `core.md` §5):** le risposte contengono solo lo stato (Healthy/Unhealthy), mai nomi di dipendenze, versioni, stringhe di connessione o messaggi di errore; i dettagli vanno nei log. Dal proxy pubblico l'accesso a questi percorsi si limita a cura dell'utente (host e proxy sono suoi).
 
 ## Vulnerabilità applicative ricorrenti
 - **OWASP Top 10 sempre:** Claude considera la sicurezza in ogni sviluppo e previene le vulnerabilità della Top 10 (injection, broken access control, ecc.), non solo quando la funzionalità è "di sicurezza".

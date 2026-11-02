@@ -1,18 +1,19 @@
 using System.Net;
 using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.HttpOverrides;
 using System.Threading.RateLimiting;
-using SagreEventi.Web.Server.Endpoints;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using SagreEventi.Web.Server.Endpoints;
 using SagreEventi.Web.Server.HostedServices;
 using SagreEventi.Web.Server.Models.Services.Application;
 using SagreEventi.Web.Server.Models.Services.Infrastructure;
+using ZiggyCreatures.Caching.Fusion;
 using AltchaOptions = SagreEventi.Web.Server.Options.AltchaOptions;
 using AltchaOptionsValidator = SagreEventi.Web.Server.Options.AltchaOptionsValidator;
 using AppOptions = SagreEventi.Web.Server.Options.AppOptions;
@@ -22,10 +23,10 @@ using ModerazioneOptionsValidator = SagreEventi.Web.Server.Options.ModerazioneOp
 using ScadenzaEventiOptions = SagreEventi.Web.Server.Options.ScadenzaEventiOptions;
 using SmtpOptions = SagreEventi.Web.Server.Options.SmtpOptions;
 using SmtpOptionsValidator = SagreEventi.Web.Server.Options.SmtpOptionsValidator;
-using ZiggyCreatures.Caching.Fusion;
 
 namespace SagreEventi.Web.Server.Extensions;
 
+/// <summary>Registers the application services, options and hosted services.</summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>Registers all the application services: JSON, CORS, cache, database, event services, rate limits, Identity and OpenAPI.</summary>

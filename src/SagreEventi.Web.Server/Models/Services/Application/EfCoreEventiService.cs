@@ -9,7 +9,7 @@ using ZiggyCreatures.Caching.Fusion;
 namespace SagreEventi.Web.Server.Models.Services.Application;
 
 /// <summary>Entity Framework Core implementation of <see cref="IEventiService"/>, with FusionCache for the public reads.</summary>
-public class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache, TimeProvider timeProvider) : IEventiService
+public sealed class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache, TimeProvider timeProvider) : IEventiService
 {
     private const string CacheTag = "eventi";
 
@@ -142,23 +142,19 @@ public class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache, Tim
 
     /// <inheritdoc />
     public async Task<List<EventoModel>> GetDaRivedereAsync(StatoModerazione stato, int limite, CancellationToken cancellationToken)
-    {
-        return await dbContext.Eventi.AsNoTracking()
+        => await dbContext.Eventi.AsNoTracking()
             .Where(x => x.Stato == stato)
             .OrderBy(x => x.DataOraUltimaModifica).ThenBy(x => x.Id)
             .Take(limite)
             .Select(EventoMappings.ToDto).ToListAsync(cancellationToken);
-    }
 
     /// <inheritdoc />
     public async Task<List<EventoModel>> GetConclusiAsync(int limite, CancellationToken cancellationToken)
-    {
-        return await dbContext.Eventi.AsNoTracking()
+        => await dbContext.Eventi.AsNoTracking()
             .Where(x => x.EventoConcluso)
             .OrderByDescending(x => x.DataFineEvento).ThenBy(x => x.Id)
             .Take(limite)
             .Select(EventoMappings.ToDto).ToListAsync(cancellationToken);
-    }
 
     /// <inheritdoc />
     public async Task<int> ApprovaAsync(IReadOnlyCollection<string> ids, string revisore, CancellationToken cancellationToken)

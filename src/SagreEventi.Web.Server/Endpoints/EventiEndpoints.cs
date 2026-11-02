@@ -25,7 +25,9 @@ public static class EventiEndpoints
         return app;
     }
 
+    /// <summary>Rate limit policy name for event writes.</summary>
     public const string ScritturaRateLimitPolicy = "scrittura";
+    /// <summary>Rate limit policy name for the state lookups.</summary>
     public const string StatiRateLimitPolicy = "stati";
     /// <summary>Rate limit policy name for the anti-bot challenge requests.</summary>
     public const string ChallengeRateLimitPolicy = "challenge";
@@ -35,9 +37,13 @@ public static class EventiEndpoints
 
     /// <summary>Default challenge requests allowed per minute.</summary>
     public const int RichiesteChallengeAlMinutoDefault = 30;
+    /// <summary>Maximum number of ids in a state lookup.</summary>
     public const int MaxIdStatiPerRichiesta = 50;
+    /// <summary>Default state lookups allowed per minute.</summary>
     public const int RichiesteStatiAlMinutoDefault = 30;
+    /// <summary>Default maximum number of events in a write request.</summary>
     public const int MaxEventiPerRichiestaDefault = 20;
+    /// <summary>Default write requests allowed per minute.</summary>
     public const int RichiestePutAlMinutoDefault = 10;
 
     private static async Task<List<EventoModel>> GetEventiAsync(

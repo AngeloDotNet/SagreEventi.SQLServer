@@ -8,7 +8,7 @@ namespace SagreEventi.Web.Server.HostedServices;
 /// Concludes events whose end date has passed: only the server decides the conclusion.
 /// One cycle at a time (the <see cref="PeriodicTimer"/> does not overlap); the interval follows the configuration, also at runtime.
 /// </summary>
-public class EventiHostedService(
+public sealed class EventiHostedService(
     IServiceScopeFactory serviceScopeFactory,
     IOptionsMonitor<ScadenzaEventiOptions> options,
     TimeProvider timeProvider,

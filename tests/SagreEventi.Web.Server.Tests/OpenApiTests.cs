@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Hosting;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 
 namespace SagreEventi.Web.Server.Tests;
 

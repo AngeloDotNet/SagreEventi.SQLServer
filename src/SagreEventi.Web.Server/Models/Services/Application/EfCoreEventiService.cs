@@ -9,7 +9,7 @@ using ZiggyCreatures.Caching.Fusion;
 namespace SagreEventi.Web.Server.Models.Services.Application;
 
 /// <summary>Entity Framework Core implementation of <see cref="IEventiService"/>, with FusionCache for the public reads.</summary>
-public class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache) : IEventiService
+public class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache, TimeProvider timeProvider) : IEventiService
 {
     private const string CacheTag = "eventi";
 
@@ -99,7 +99,7 @@ public class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache) : I
     {
         // The timestamp is decided by the server: it is the clients' sync cursor, a client-sent value (e.g. in 2099) would block it.
         // The client value is only used for the "most recent change wins" comparison.
-        var ora = DateTime.UtcNow;
+        var ora = timeProvider.GetUtcNow().UtcDateTime;
         var consentito = true;
 
         foreach (var todoitem in eventi)
@@ -163,7 +163,7 @@ public class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache) : I
     /// <inheritdoc />
     public async Task<int> ApprovaAsync(IReadOnlyCollection<string> ids, string revisore, CancellationToken cancellationToken)
     {
-        var ora = DateTime.UtcNow;
+        var ora = timeProvider.GetUtcNow().UtcDateTime;
         var eventi = await dbContext.Eventi.Where(x => ids.Contains(x.Id) && x.Stato != StatoModerazione.Approvato)
             .ToListAsync(cancellationToken);
 
@@ -182,7 +182,7 @@ public class EfCoreEventiService(AppDbContext dbContext, IFusionCache cache) : I
     /// <inheritdoc />
     public async Task<int> RifiutaAsync(IReadOnlyCollection<string> ids, string? motivo, string revisore, CancellationToken cancellationToken)
     {
-        var ora = DateTime.UtcNow;
+        var ora = timeProvider.GetUtcNow().UtcDateTime;
         var eventi = await dbContext.Eventi.Where(x => ids.Contains(x.Id) && x.Stato != StatoModerazione.Rifiutato)
             .ToListAsync(cancellationToken);
 

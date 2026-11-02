@@ -193,7 +193,7 @@ public class ScadenzaEventiTests : IClassFixture<ApiFactory>
     }
 
     private EventiHostedService NuovoServizio(IOptionsMonitor<ScadenzaEventiOptions> monitor) =>
-        new(factory.Services.GetRequiredService<IServiceScopeFactory>(), monitor, NullLogger<EventiHostedService>.Instance);
+        new(factory.Services.GetRequiredService<IServiceScopeFactory>(), monitor, TimeProvider.System, NullLogger<EventiHostedService>.Instance);
 
     private static async Task AttendiAsync(Func<Task<bool>> condizione)
     {

@@ -99,19 +99,19 @@ describe('AppComponent navigation', () => {
       expect(vociDesktop(crea())).toEqual(['Home', 'Eventi', 'Agenda']);
     });
 
-    it('adds "Le mie" and "Gestione" when the device has an own report and the user can moderate', () => {
+    it('adds only "Le mie" when the device has an own report, never "Gestione"', () => {
       mieSegnalazioni.set([{ id: 'a' }]);
       modificaConsentita.set(true);
       inAttesa.set(3);
 
-      expect(vociDesktop(crea())).toEqual(['Home', 'Eventi', 'Agenda', 'Le mie', 'Gestione (3)']);
+      expect(vociDesktop(crea())).toEqual(['Home', 'Eventi', 'Agenda', 'Le mie']);
     });
 
-    it('adds only "Gestione" for a moderator without own reports', () => {
+    it('does not add "Gestione" for a moderator without own reports', () => {
       modificaConsentita.set(true);
       inAttesa.set(3);
 
-      expect(vociDesktop(crea())).toEqual(['Home', 'Eventi', 'Agenda', 'Gestione (3)']);
+      expect(vociDesktop(crea())).toEqual(['Home', 'Eventi', 'Agenda']);
     });
   });
 
@@ -124,7 +124,7 @@ describe('AppComponent navigation', () => {
       expect(etichette(await apriMenu())).toEqual(['Accedi', 'Informazioni']);
     });
 
-    it('adds "Le mie" and "Gestione", both mobile-only, before Informazioni', async () => {
+    it('adds "Le mie" (mobile-only) and "Gestione", before Informazioni', async () => {
       mieSegnalazioni.set([{ id: 'a' }]);
       modificaConsentita.set(true);
       crea();
@@ -132,7 +132,7 @@ describe('AppComponent navigation', () => {
       const voci = await apriMenu();
 
       expect(etichette(voci)).toEqual(['Accedi', 'Le mie', 'Gestione', 'Informazioni']);
-      expect(voci.filter((v) => v.classList.contains('solo-mobile')).map((v) => v.textContent?.trim())).toEqual(['Le mie', 'Gestione']);
+      expect(voci.filter((v) => v.classList.contains('solo-mobile')).map((v) => v.textContent?.trim())).toEqual(['Le mie']);
     });
   });
 });

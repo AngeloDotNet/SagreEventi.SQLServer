@@ -45,16 +45,21 @@
         (onClick)="menuTema.toggle($event)"
       />
       <p-menu #menuTema [model]="vociTema()" [popup]="true" appendTo="body" />
-      <p-button
-        class="menu-azioni"
-        icon="pi pi-ellipsis-v"
-        [rounded]="true"
-        [text]="true"
-        severity="secondary"
-        ariaLabel="Menu"
-        aria-haspopup="menu"
-        (onClick)="menu.toggle($event)"
-      />
+      <span class="menu-con-badge">
+        <p-button
+          class="menu-azioni"
+          icon="pi pi-ellipsis-v"
+          [rounded]="true"
+          [text]="true"
+          severity="secondary"
+          [ariaLabel]="etichettaMenu()"
+          aria-haspopup="menu"
+          (onClick)="menu.toggle($event)"
+        />
+        @if (daModerare() > 0) {
+          <span class="menu-badge" aria-hidden="true">{{ daModerare() }}</span>
+        }
+      </span>
       <p-menu #menu [model]="voci()" [popup]="true" appendTo="body" />
     </div>
   </div>

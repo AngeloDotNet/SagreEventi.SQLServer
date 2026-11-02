@@ -45,12 +45,21 @@ export class AppComponent {
     this.store.mieSegnalazioni().length > 0 ? [{ path: '/segnalazioni', etichetta: 'Le mie', icona: 'pi-inbox', esatto: false }] : [],
   );
 
-  /** "Gestione" (moderation): only for who can moderate. */
+  /** "Gestione" (moderation): only for who can moderate. It lives in the top menu, never in the navigation bars. */
   private readonly linkGestione = computed(() =>
     this.permessi.modificaConsentita()
       ? [{ path: '/gestione', etichetta: this.etichettaGestione(), icona: 'pi-cog', esatto: false }]
       : [],
   );
+
+  /** Reports waiting for review, for who can moderate (0 for everybody else): shown as a badge on the "⋮" button. */
+  protected readonly daModerare = computed(() => (this.permessi.modificaConsentita() ? (this.revisione.inAttesa() ?? 0) : 0));
+
+  /** Accessible name of the "⋮" button: it also announces the badge. */
+  protected readonly etichettaMenu = computed(() => {
+    const n = this.daModerare();
+    return n > 0 ? `Menu, ${n} ${n === 1 ? 'segnalazione' : 'segnalazioni'} da moderare` : 'Menu';
+  });
 
   /** Desktop top navigation. */
   protected readonly link = computed(() => [
@@ -58,7 +67,6 @@ export class AppComponent {
     { path: '/eventi', etichetta: 'Eventi', icona: 'pi-th-large', esatto: false },
     { path: '/agenda', etichetta: 'Agenda', icona: 'pi-calendar', esatto: false },
     ...this.linkMie(),
-    ...this.linkGestione(),
   ]);
 
   /** Mobile bottom navigation: always these five entries, "Segnala" in the middle (highlighted). */
@@ -72,15 +80,15 @@ export class AppComponent {
   ];
 
   /**
-   * Entries of the topbar menu: account (login or logout), "Le mie" and "Gestione" (mobile only: on desktop the top navigation
-   * has them) and the information page.
+   * Entries of the topbar menu: account (login or logout), "Le mie" (mobile only: on desktop the top navigation has it),
+   * "Gestione" (every width, for who can moderate) and the information page.
    */
   protected readonly voci = computed<MenuItem[]>(() => [
     this.auth.autenticato()
       ? { label: `Esci (${this.auth.email()})`, icon: 'pi pi-sign-out', command: () => this.esci() }
       : { label: 'Accedi', icon: 'pi pi-user', routerLink: '/login' },
     ...this.linkMie().map((l) => ({ label: l.etichetta, icon: `pi ${l.icona}`, routerLink: l.path, styleClass: 'solo-mobile' })),
-    ...this.linkGestione().map((l) => ({ label: l.etichetta, icon: `pi ${l.icona}`, routerLink: l.path, styleClass: 'solo-mobile' })),
+    ...this.linkGestione().map((l) => ({ label: l.etichetta, icon: `pi ${l.icona}`, routerLink: l.path })),
     { label: 'Informazioni', icon: 'pi pi-info-circle', routerLink: '/informazioni' },
   ]);
 

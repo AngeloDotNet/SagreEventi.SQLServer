@@ -31,7 +31,7 @@ jobs:
 
       - name: Build and test
         run: |
-          dotnet restore SagreEventi.sln
+          dotnet restore SagreEventi.sln --locked-mode
           dotnet build SagreEventi.sln -c Release --no-restore
           dotnet test SagreEventi.sln -c Release --no-build
 

@@ -11,6 +11,7 @@ namespace SagreEventi.Web.Server.Endpoints;
 /// </summary>
 public static class AdminUtentiEndpoints
 {
+    /// <summary>Maximum length of a user e-mail address.</summary>
     public const int MaxEmailLength = 256;
 
     /// <summary>Maps the user and role management endpoints under <c>/api/admin</c> (Admin only).</summary>
@@ -216,8 +217,10 @@ public static class AdminUtentiEndpoints
     private static UtenteAdminModel ToModel(ApplicationUser utente, IEnumerable<string> ruoli)
         => new(utente.Id, utente.Email ?? utente.UserName ?? string.Empty, [.. ruoli.Order()]);
 
+    /// <summary>User as shown in the administration area: identifier, e-mail and roles.</summary>
     public sealed record UtenteAdminModel(string Id, string Email, string[] Ruoli);
 
+    /// <summary>Request to create a user with the given e-mail, password and roles.</summary>
     public sealed record CreaUtenteRequest(string? Email, string? Password, List<string>? Ruoli);
 
     /// <summary>Empty password = leave unchanged; <c>Ruoli</c> replaces the whole set of roles of the user.</summary>

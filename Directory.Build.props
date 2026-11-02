@@ -2,6 +2,8 @@
 
     <PropertyGroup>
         <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
 
 </Project>

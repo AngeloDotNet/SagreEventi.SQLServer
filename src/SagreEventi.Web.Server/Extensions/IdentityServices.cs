@@ -1,15 +1,18 @@
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Threading.RateLimiting;
 using SagreEventi.Web.Server.Models.Identity;
 using SagreEventi.Web.Server.Models.Services.Infrastructure;
 
 namespace SagreEventi.Web.Server.Extensions;
 
+/// <summary>Registers ASP.NET Core Identity, authentication, authorization and their rate limits.</summary>
 public static class IdentityServices
 {
+    /// <summary>Rate limit policy name for the authentication endpoints.</summary>
     public const string AuthRateLimitPolicy = "auth";
+    /// <summary>Minimum password length.</summary>
     public const int MinPasswordLength = 10;
 
     /// <summary>Registers Identity (API endpoints, roles, EF stores), the authorization policies, the seed service and the rate limit for the auth endpoints.</summary>
@@ -78,5 +81,6 @@ public static class IdentityServices
         return app;
     }
 
+    /// <summary>Current user as returned to the client: e-mail and roles.</summary>
     public sealed record UtenteCorrenteResponse(string Email, string[] Ruoli);
 }

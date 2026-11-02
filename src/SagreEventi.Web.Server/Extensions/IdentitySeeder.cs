@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using SagreEventi.Web.Server.Models.Services.Infrastructure;
 using SagreEventi.Web.Server.Models.Identity;
+using SagreEventi.Web.Server.Models.Services.Infrastructure;
 
 namespace SagreEventi.Web.Server.Extensions;
 
+/// <summary>Creates the roles and the initial users at startup.</summary>
 public static class IdentitySeeder
 {
     private static readonly HashSet<string> PasswordDiEsempio = new(StringComparer.Ordinal) { "Admin!12345", "Editor!12345" };

@@ -124,6 +124,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IValidateOptions<ModerazioneOptions>, ModerazioneOptionsValidator>();
         services.AddOptions<AppOptions>().Bind(configuration.GetSection(AppOptions.SectionName)).ValidateOnStart();
         services.AddSingleton<IValidateOptions<AppOptions>, AppOptionsValidator>();
+        services.AddSingleton<IEmailSender, MailKitEmailSender>();
 
         ConfiguraForwardedHeaders(services, configuration);
         services.AddIdentityServices();

@@ -191,6 +191,9 @@ namespace SagreEventi.Web.Server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("NotificataIl")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("RevisionatoDa")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");

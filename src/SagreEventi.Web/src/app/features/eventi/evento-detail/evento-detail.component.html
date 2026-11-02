@@ -35,7 +35,7 @@
           </div>
         </dl>
 
-        <p class="dettaglio-descrizione">{{ e.descrizioneEvento }}</p>
+        <p class="dettaglio-descrizione">@for (s of descrizione(); track $index) {@if (s.tipo === 'link') {<a class="link-descrizione" [href]="s.url" target="_blank" rel="noopener noreferrer" [attr.title]="s.url">{{ s.host }}<i class="pi pi-external-link" aria-hidden="true"></i></a>} @else {{{ s.testo }}}}</p>
         <p class="dettaglio-nota">Dal {{ inizioLungo() }} al {{ fineLunga() }}.</p>
       </div>
 
@@ -44,6 +44,9 @@
         <a class="btn btn-contorno btn-pieno" [href]="urlMappa()" target="_blank" rel="noopener">
           <i class="pi pi-map-marker" aria-hidden="true"></i>Apri la mappa
         </a>
+        @if (linkPrincipale(); as l) {
+          <a class="btn btn-contorno btn-pieno" [href]="l.url" target="_blank" rel="noopener noreferrer" [attr.title]="l.url">Apri il programma<i class="pi pi-external-link icona-dopo" aria-hidden="true"></i></a>
+        }
         <p-button label="Condividi" icon="pi pi-share-alt" severity="secondary" [outlined]="true" (onClick)="condividi()" />
         @if (permessi.puoModificare()) {
           <hr />

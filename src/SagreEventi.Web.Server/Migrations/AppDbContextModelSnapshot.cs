@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SagreEventi.Web.Server.Models.Services.Infrastructure;
 
@@ -13,6 +14,7 @@ namespace SagreEventi.Web.Server.Migrations
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
     {
+        /// <inheritdoc />
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
@@ -203,7 +205,41 @@ namespace SagreEventi.Web.Server.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Stato");
+
                     b.ToTable("Eventi", (string)null);
+                });
+
+            modelBuilder.Entity("SagreEventi.Web.Server.Models.Entities.StatoModerazioneLookup", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("StatiModerazione", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 0,
+                            Nome = "InAttesa"
+                        },
+                        new
+                        {
+                            Id = 1,
+                            Nome = "Approvato"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Nome = "Rifiutato"
+                        });
                 });
 
             modelBuilder.Entity("SagreEventi.Web.Server.Models.Identity.ApplicationUser", b =>
@@ -319,6 +355,15 @@ namespace SagreEventi.Web.Server.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SagreEventi.Web.Server.Models.Entities.Evento", b =>
+                {
+                    b.HasOne("SagreEventi.Web.Server.Models.Entities.StatoModerazioneLookup", null)
+                        .WithMany()
+                        .HasForeignKey("Stato")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

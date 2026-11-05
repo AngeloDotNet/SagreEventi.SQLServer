@@ -15,24 +15,22 @@ paths:
 ---
 
 ## 2. Regole Angular & TypeScript
-- **TypeScript rigoroso:** codice SEMPRE fortemente tipizzato. Vietato `any` (usa `unknown` + type guard se necessario). Interfacce o tipi precisi per ogni modello, DTO e risposta API.
+- **TypeScript rigoroso:** codice SEMPRE fortemente tipizzato. Vietato `any` (usa `unknown` + type guard se necessario). Interfacce o tipi precisi per ogni modello, DTO e risposta API. ▲ Avviso `check-quality` del plugin per `any`.
 - **UI Component Preference:**
   - Verifica sempre se esiste un componente **PrimeNG** adatto (es. `p-table`, `p-select`, `p-dialog`, `p-button`).
   - Usa i nomi correnti, non deprecati (`p-select` e non `p-dropdown`, `p-datepicker` e non `p-calendar`, `p-toggleswitch` e non `p-inputSwitch`). In caso di dubbio, verifica la documentazione della versione installata.
   - Angular Material solo per utility o se espressamente richiesto. Non mescolare due sistemi di tema: l'isolamento degli stili va gestito esplicitamente.
-- **Componenti:** SEMPRE Standalone. Nessun `NgModule`.
-- **Change detection:** `ChangeDetectionStrategy.OnPush` su ogni componente.
-- **API a segnali:** usa `input()`, `output()`, `model()`, `viewChild()` al posto dei decoratori `@Input/@Output/@ViewChild`.
+- **Componenti:** standalone, nessun `NgModule`: vedi §15.
+- **Change detection e API a segnali:** vedi §14 (`OnPush`, `input()`, `output()`, `model()`, `viewChild()`).
 - **Zoneless:** nei nuovi progetti `provideZonelessChangeDetection()` è obbligatorio, senza `zone.js`. Eccezione solo se una dipendenza lo impedisce, da segnalare e motivare. Nei progetti esistenti NON migrare di tua iniziativa: chiedi come procedere.
 - **Stato:** `signal()`, `computed()`, `linkedSignal()` per stato locale e globale. `effect()` solo per effetti collaterali (log, `localStorage`, DOM), mai per propagare stato da un signal a un altro. RxJS solo per HTTP e flussi asincroni complessi. Usa `takeUntilDestroyed` per le sottoscrizioni manuali. Vietati i `subscribe` annidati: usa gli operatori (`switchMap`, `concatMap`...).
 - **`httpResource` / `resource`:** permessi solo per letture semplici legate a signal e solo se la versione installata li dà come stabili. Per tutto il resto (mutazioni, interceptor complessi) usa `HttpClient` con il client generato.
-- **Template:** control flow nativo (`@if`, `@for` con `track`, `@switch`). Vietati `*ngIf` / `*ngFor`. Usa `@defer` per i componenti pesanti.
-- **Dependency Injection:** `inject(MyService)`, non il costruttore.
+- **Template e Dependency Injection:** vedi §13 (control flow, `@defer`, `inject()`).
 - **Form:** Typed Reactive Forms per i form non banali. Gli errori di validazione server-side (per campo) vanno mappati sui rispettivi controlli.
 - **Routing:** lazy loading delle route per feature (`loadComponent` / `loadChildren`), sempre, anche senza micro frontend: è già ciò che rende veloce il caricamento iniziale. I guard servono alla UX, mai come unico controllo di sicurezza. I micro frontend sono un'opzione ulteriore, non il default (§12).
 - **Client API:** preferisci generare client e modelli TypeScript dallo schema OpenAPI (NSwag / OpenAPI Generator) invece di riscriverli a mano. I file generati stanno in una cartella dedicata e riconoscibile (es. `api/generated/`) e **non si modificano mai a mano**: ogni cambiamento passa dallo schema o dalla configurazione del generatore. Il comando di generazione è uno script npm e sta nel `CLAUDE.md` (tabella Comandi); il client si rigenera a ogni modifica dello schema.
 - **Gestione errori HTTP:** `HttpInterceptorFn` funzionale registrato con `provideHttpClient(withInterceptors([...]))`. I messaggi globali passano dal `MessageService` di PrimeNG (Toast). Gli errori di validazione per campo vanno invece mostrati sul form, non nel toast. 401/403 hanno un trattamento dedicato: redirect al login; refresh del token solo se il progetto prevede il rinnovo (vedi `security.md`).
-  - **Trattamento per codice** (contratto in `core.md` §1, mappatura server in `backend.md` §4.1): l'interceptor legge il `ProblemDetails` e traduce le chiavi con i parametri ricevuti (§4.2).
+  - **Trattamento per codice** (contratto in `core.md` §1, mappatura server in `backend-app.md` §4.1): l'interceptor legge il `ProblemDetails` e traduce le chiavi con i parametri ricevuti (§4.2).
     | Codice | Comportamento |
     |---|---|
     | 400 | errori per campo mostrati sul form (`errors`), mai nel toast |
@@ -57,9 +55,12 @@ paths:
 
 ## 3. Standard di UI/UX Professionale (Design di Sistema)
 - **Layout & Spazi:** griglie e spaziature rigorose (multipli di 4px/8px). Evita layout affollati; dai respiro agli elementi.
-- **Design token:** colori, spaziature, raggi, ombre e tipografia sono variabili CSS definite una sola volta. Vietati colori hardcoded (`#fff`, `rgb(...)`) nei componenti: romperebbero il multi-tema.
+- **Design token:** colori, spaziature, raggi, ombre e tipografia sono variabili CSS definite una sola volta. Vietati colori hardcoded (`#fff`, `rgb(...)`) nei componenti: romperebbero il multi-tema. ▲ Avviso `check-quality` del plugin per i colori esadecimali.
 - **Responsive / mobile-first:** testa a 360px, 768px, 1280px. Le tabelle degradano (colonne nascoste o vista a card) su schermi piccoli.
 - **Gerarchia visiva:** gerarchia tipografica netta. L'azione primaria si stacca dalle secondarie.
+- **Scala tipografica con nomi semantici:** i token di testo hanno nomi di ruolo (per esempio `title`, `subtitle`, `body`, `caption`), non valori come `font-size-3`. Ogni ruolo ha una sola dimensione, definita nei token e usata da tutti i componenti.
+- **Altezza di riga per ruolo:** i titoli hanno un'altezza di riga più stretta del testo corrente, e il testo lungo (corpo) ha un'altezza di riga più ampia, per leggibilità. I valori sono token, come le dimensioni.
+- **Misura massima del testo:** il testo continuo ha una larghezza massima leggibile (in caratteri per riga) definita come token; i contenitori di testo lungo la rispettano anche su schermi larghi.
 - **Stati dei componenti:** `hover`, `focus`, `active`, `disabled` definiti, con transizioni fluide (`transition: all 200ms ease`, durata massima 200ms).
 - **Feedback e validazione:** campi errati con bordo colorato, icona e messaggio contestuale. Submit disabilitato se il form è invalido, oppure spinner durante l'invio (evita doppi invii).
 - **Loading:** `p-skeleton` al posto di spinner generici per tabelle e liste.
@@ -139,7 +140,7 @@ paths:
 ---
 
 ## 9. Sicurezza Frontend
-Le regole (niente `innerHTML` né `bypassSecurityTrust*` senza sanitizzazione, nessun dato sensibile in `localStorage`, URL o console, CSP con nonce) sono nella sezione "Frontend" di `security.md`. Se il progetto non include `security.md`, Claude lo segnala e chiede se importare almeno quella sezione.
+Le regole (niente `innerHTML` né `bypassSecurityTrust*` senza sanitizzazione, nessun dato sensibile in `localStorage`, URL o console, CSP con nonce, Trusted Types, `postMessage`, source map, service worker) sono nella sezione "Frontend" di `security.md`, che è l'unica fonte: qui non si ripetono. Se il progetto non include `security.md`, Claude lo segnala e chiede se importare almeno quella sezione.
 
 ---
 
@@ -154,7 +155,7 @@ Le regole (niente `innerHTML` né `bypassSecurityTrust*` senza sanitizzazione, n
 - **Casi ostili:** per ogni codice che tocca input, token o storage, almeno un caso ostile (testo con `<script>`, a capo, `;`, identificatori con `../` o `?#`, JSON corrotto, token mai inviato a URL di terzi). Principio e test lato server in `security.md`.
 - **Difetti noti:** un difetto reale non ancora corretto si documenta con `it.fails` e un commento che spiega come correggerlo, e si segnala all'utente; non è un modo per far passare la suite (`core.md` §4). Quando il difetto è corretto, il test diventa un normale `it`.
 - **Query dei test:** nei test dei componenti e in Playwright si cercano gli elementi per ruolo, etichetta o testo accessibile (`getByRole`, `getByLabel`), non per classi CSS; `data-testid` solo se non c'è alternativa accessibile.
-- **Dati E2E:** ogni test crea i propri dati tramite API o seed dedicato dell'ambiente di test e non dipende da dati lasciati da altri test; utenti di test sintetici con credenziali da variabili d'ambiente (mai password reali nel repository). L'ambiente E2E gira sul compose del progetto con un database di test separato e azzerabile; istanza e modalità di quel database si **chiedono ogni volta**, senza presumerle (per l'istanza di prova del backend vedi `backend.md` §4.5).
+- **Dati E2E:** ogni test crea i propri dati tramite API o seed dedicato dell'ambiente di test e non dipende da dati lasciati da altri test; utenti di test sintetici con credenziali da variabili d'ambiente (mai password reali nel repository). L'ambiente E2E gira sul compose del progetto con un database di test separato e azzerabile; istanza e modalità di quel database si **chiedono ogni volta**, senza presumerle (per l'istanza di prova del backend vedi `backend-app.md` §4.5).
 - **Stabilità:** nessuno `waitForTimeout`; si attende uno stato osservabile (elemento, risposta di rete). Trace e screenshot di Playwright salvati solo in caso di fallimento.
 - **Accessibilità automatica:** `@axe-core/playwright` sulle pagine principali, con zero violazioni gravi (`core.md` §4), verificato nei flussi E2E con tema light e dark. Licenza da verificare al primo uso (`core.md` §3).
 - **Temi e lingue:** i flussi principali sono verificati almeno con la lingua di default e un secondo tema; le chiavi di traduzione mancanti fanno fallire il test, non mostrano la chiave grezza.
@@ -180,3 +181,30 @@ Non sono il default. Il caricamento a richiesta per feature si ottiene già con 
 - **Docker e configurazione a runtime:** gli URL dei remote si leggono da configurazione a runtime (come `config.json`, §2), non incorporati nella build. Una sola immagine per tutti gli ambienti resta valida per ogni applicazione (shell e ciascun remote); il numero di immagini e di servizi nel compose si concorda con l'utente (`docker.md`).
 - **Sicurezza:** CSP e origini dei remote in allow-list esplicita (`security.md`); un remote caricato da origine non fidata è vietato. Gli stessi controlli di tipo `innerHTML`/`bypassSecurityTrust*` valgono nei remote.
 - **Test:** unit test in ogni remote (§10); E2E Playwright sulla shell con i remote reali per i flussi principali.
+
+## 13. Linee guida per i template
+- **Control flow moderno (MUST):** nei template solo la sintassi nativa (`@if`, `@for` con `track`, `@switch`); vietati `*ngIf` / `*ngFor` / `*ngSwitch`. Usa `@defer` per i componenti pesanti.
+- **Async Pipe:** per mostrare nel template un Observable si usa l'`async` pipe, senza `subscribe` manuali nel componente (nessuna sottoscrizione da chiudere a mano).
+- **Servizi con un unico scopo:** ogni servizio ha una sola responsabilità; un servizio che fa più cose si divide.
+- **`inject()` (MUST):** la Dependency Injection avviene con `inject(MyService)`, non con l'iniezione tramite costruttore.
+- **Signal per lo stato locale:** lo stato locale dei componenti è in `signal()` (dettagli su `computed()`, `linkedSignal()`, `effect()` e RxJS in §2, voce "Stato"). Vietato `mutate()`: si aggiorna con `set()` o `update()` restituendo un nuovo valore.
+
+## 14. Linee guida per i componenti
+- **Componenti piccoli e focalizzati:** ogni componente ha una sola responsabilità; un componente che cresce o gestisce più cose si divide in componenti più piccoli.
+- **Input e output funzionali (MUST):** `input()`, `output()`, `model()`, `viewChild()` al posto dei decoratori `@Input` / `@Output` / `@ViewChild`.
+- **`computed()` per lo stato derivato:** ciò che deriva da altri signal si esprime con `computed()`, mai con un secondo `signal()` aggiornato a mano né con un `effect()` (dettagli in §2, voce "Stato").
+- **`OnPush` (MUST):** `ChangeDetectionStrategy.OnPush` su ogni componente.
+- **Reactive Forms:** i form si realizzano con i moduli reattivi (Typed Reactive Forms), non con template-driven forms; per i form non banali e per la mappatura degli errori server-side vedi §2, voce "Form".
+- **Niente `ngClass` e `ngStyle`:** classi e stili si associano con i binding nativi `[class.nome]` / `[class]` e `[style.proprietà]` / `[style]`. Valgono comunque i vincoli sui colori e sugli stili di §3 e §4.1.
+
+## 15. Migliori pratiche di Angular
+- **Componenti standalone (MUST):** sempre componenti, direttive e pipe standalone; nessun `NgModule`.
+- **Signal per lo stato:** la gestione dello stato usa i signal (`signal()`, `computed()`, `linkedSignal()`); dettagli in §2, voce "Stato".
+- **Lazy loading delle route per feature:** ogni feature si carica a richiesta con `loadComponent` / `loadChildren`; dettagli (guard, rapporto con i micro frontend) in §2, voce "Routing".
+- **Host binding nei metadati (MUST):** binding e listener dell'host si dichiarano nella proprietà `host` del decoratore `@Component` / `@Directive`; vietati `@HostBinding` e `@HostListener`.
+- **`NgOptimizedImage`:** le immagini si ottimizzano con `NgOptimizedImage` (`ngSrc`, con `width` e `height` o `fill`, e `priority` per l'immagine principale); `src` semplice solo dove la direttiva non è applicabile (es. immagini inline o `data:`), con motivo.
+
+## 16. Best practice per TypeScript
+- **Controllo rigoroso dei tipi (MUST):** `strict` sempre attivo (opzioni del compilatore in §2, voce "Compilatore"); il codice è fortemente tipizzato.
+- **Inferenza dove il tipo è evidente:** non si annotano i tipi che il compilatore deduce da solo (`const count = 0`, non `const count: number = 0`). Le annotazioni esplicite restano per i parametri, i valori di ritorno dei metodi pubblici, i modelli, i DTO e dove l'inferenza darebbe un tipo troppo largo.
+- **Niente `any` (MUST):** vietato, come da «TypeScript rigoroso» in §2 (lì la regola è scritta per intero).

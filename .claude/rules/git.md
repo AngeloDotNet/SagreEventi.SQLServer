@@ -2,7 +2,15 @@
 
 > Richiede `core.md`. Si importa in ogni progetto versionato con git; `core.md` §5c rimanda a questo modulo.
 
-**Ambito di Claude: solo commit locali, sempre con conferma esplicita.** Claude non committa mai di propria iniziativa, nemmeno un commit singolo: prima di ogni commit mostra file inclusi e messaggio proposto e **attende l'ok esplicito dell'utente**; senza ok, non committa. Dopo la conferma crea i commit (e, previa conferma dell'utente sul nome, il branch locale) seguendo queste linee guida, al termine di ogni unità logica di lavoro che builda e ha i test verdi. Oltre ai commit non esegue nessun'altra operazione git verso l'esterno o di integrazione (PR, merge request, merge, push, tag). Resta **a carico dell'utente**: `push`, creazione e merge delle PR, tag, rilasci e l'esecuzione delle pipeline CI/CD (i file di pipeline può scriverli e committarli Claude, vedi `core.md` §5). Claude non esegue mai queste operazioni, nemmeno se sembrano il passo naturale successivo: a fine lavoro segnala che i commit sono pronti per il push.
+**Ambito di Claude: solo commit locali, sempre con conferma esplicita.** Claude non committa mai di propria iniziativa, nemmeno un commit singolo: prima di ogni commit mostra file inclusi e messaggio proposto e **attende l'ok esplicito dell'utente**; senza ok, non committa. Dopo la conferma crea i commit (e, previa conferma dell'utente sul nome, il branch locale) seguendo queste linee guida, al termine di ogni unità logica di lavoro che builda e ha i test verdi. Oltre ai commit non esegue operazioni git verso l'esterno o di integrazione (PR, merge request, merge, push, tag, rilasci) se il progetto non le ha approvate (sezione «Integrazione GitHub: verifica e approvazione per progetto»). Resta **sempre a carico dell'utente** l'esecuzione delle pipeline CI/CD (i file di pipeline può scriverli e committarli Claude, vedi `core.md` §5). Senza approvazione Claude non esegue le operazioni di integrazione, nemmeno se sembrano il passo naturale successivo: a fine lavoro segnala che i commit sono pronti per il push.
+
+## Integrazione GitHub: verifica e approvazione per progetto
+- **Verifica di `gh`:** alla prima richiesta di commit di ogni lavoro, insieme alla conferma del branch, Claude controlla con `gh --version` e `gh auth status` (sola lettura) se la GitHub CLI è installata e autenticata. Se manca o non è autenticata, lo dice e non propone PR, push, tag o rilasci.
+- **Domande, una alla volta:** se è installata e autenticata, Claude chiede separatamente per PR, push, tag e rilasci se il progetto li autorizza. Una domanda per messaggio, in attesa della risposta prima della successiva.
+- **Registrazione:** le risposte approvate si scrivono nel `CLAUDE.md` di progetto, nella sezione «Eccezioni alle regole globali», in una riga fissa: `- **Integrazione GitHub approvata:** PR sì/no, push sì/no, tag sì/no, rilasci sì/no (AAAA-MM-GG)`. Un'approvazione vale solo per il progetto in cui è registrata.
+- **Uso:** con l'approvazione Claude usa `gh` solo per l'operazione autorizzata, senza altri usi (né lettura di stato, CI o PR).
+- **Sempre bloccati:** anche con approvazione restano vietati `push --force` (e varianti), `reset --hard`, `--no-verify`, `clean -f`, `rm -rf` e `git init`: riscrivono la storia, saltano i controlli o cancellano dati. Il hook `guard-commands` del plugin `kit` applica questo elenco.
+- **Senza riga o con riga non valida:** non c'è approvazione: nessuna operazione di integrazione.
 
 ## Branch (git flow)
 - **Modello:** git flow completo, **obbligatorio in ogni progetto**. `main` contiene solo codice rilasciato; `develop` è il branch di integrazione (il nome è sempre `develop`); il lavoro nasce su branch dedicati: `feature/` (nuove funzionalità), `bugfix/` (correzioni), `release/` (preparazione di un rilascio), che partono da `develop`, e `hotfix/` (correzione urgente su produzione), che parte da `main`. Non esiste un flusso semplificato senza `develop`: si deroga solo con approvazione esplicita dell'utente.
@@ -15,6 +23,7 @@
 - Branch di breve durata. Aggiornamento dal branch di partenza, push e merge (squash o rebase secondo la politica del progetto) sono a cura dell'utente. Con git flow la politica ha una regola fissa, vedi "Pull Request": squash solo per le PR verso `develop`, merge commit per ogni PR che coinvolge `main`.
 
 ## Messaggi di commit (Conventional Commits, in inglese)
+▲ Verificato dal plugin `kit` (hook `guard-commands`): un messaggio non conforme viene bloccato.
 - Formato: `tipo(scope): descrizione` — tipi ammessi: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `ci`, `chore`, `revert`.
 - Oggetto all'imperativo, minuscolo, senza punto finale, al massimo 72 caratteri. `scope` opzionale (modulo o slice, es. `orders`, `auth`).
 - Il corpo, se serve, spiega il **perché** e non il cosa, andando a capo a 100 caratteri circa.
@@ -29,7 +38,7 @@
 Una funzionalità non è un unico commit gigante: è una **serie di commit piccoli e ordinati sul branch**, ciascuno che builda e passa i test. Ordine tipico:
 1. `feat(scope)`: modello/entità, configurazione EF e migrazione (+ servizio applicativo, se piccolo);
 2. `feat(scope)`: endpoint o UI che usano il servizio;
-3. `test(scope)`: test del servizio e dell'isolamento tra utenti; test di integrazione per ciò che gli unit test non coprono, nel progetto `IntegrationTests` con il database di prova (vedi `core.md` §4 e `backend.md` §4.5);
+3. `test(scope)`: test del servizio e dell'isolamento tra utenti; test di integrazione per ciò che gli unit test non coprono, nel progetto `IntegrationTests` con il database di prova (vedi `core.md` §4 e `backend-app.md` §4.5);
 4. `docs(scope)` / `chore(...)`: aggiornamento di `README.md` e `CHANGELOG.md` (a ogni step del piano, vedi `core.md` §5b), ADR se servono.
 - I **test stanno in commit `test(scope)` separati** dal codice di produzione, ma nella stessa PR; mai una PR con funzionalità senza test.
 - Un `fix` è un commit a sé, con la causa radice nel corpo. Un bug di sicurezza usa `fix(security)`.
@@ -39,7 +48,7 @@ Una funzionalità non è un unico commit gigante: è una **serie di commit picco
 
 ## Commit multipli: piano e passo-passo
 Quando le modifiche da committare sono più di un'unità logica (o l'utente chiede "committa tutto"), Claude non crea i commit in blocco:
-1. **Piano:** prima di creare qualsiasi commit, elenca i commit che intende fare, numerati e in ordine (vedi "Granularità e sequenza"): per ognuno oggetto proposto e file inclusi. Segnala i file che non rientrano in nessun commit (segreti, generati, estranei al lavoro). Segnala anche i file con **modifiche destinate a commit diversi**: `git add -p` è interattivo e non disponibile, quindi per quei file Claude **chiede caso per caso** se spezzarli (preparando una patch parziale applicata con `git apply --cached`, mostrata prima di committare) oppure unire i commit interessati; non sceglie da solo. Il piano si può correggere: l'utente può unire, dividere, riordinare o escludere commit. Il piano dei commit si salva in un file dedicato, **`piano-commit.md`** nella root del progetto (distinto da `PIANO.md`, che resta il piano di sviluppo): una casella di stato per commit, aggiornata dopo ognuno, così non si perde in un lavoro lungo o tra sessioni; come `PIANO.md`, non si committa se l'utente non lo chiede.
+1. **Piano:** prima di creare qualsiasi commit, elenca i commit che intende fare, numerati e in ordine (vedi "Granularità e sequenza"): per ognuno oggetto proposto e file inclusi. Segnala i file che non rientrano in nessun commit (segreti, generati, estranei al lavoro). Segnala anche i file con **modifiche destinate a commit diversi**: `git add -p` è interattivo e non disponibile, quindi per quei file Claude **chiede caso per caso** se spezzarli (preparando una patch parziale applicata con `git apply --cached`, mostrata prima di committare) oppure unire i commit interessati; non sceglie da solo. Il piano si può correggere: l'utente può unire, dividere, riordinare o escludere commit. Il piano dei commit si salva in un file dedicato, **`piano-commit.md`** nella root del progetto (distinto da `PIANO.md`, che resta il piano di sviluppo): una casella di stato per commit, aggiornata dopo ognuno, così non si perde in un lavoro lungo o tra sessioni; come `PIANO.md`, non si committa se l'utente non lo chiede e, finiti tutti i commit del piano (caselle tutte spuntate), si cancella senza chiedere conferma.
 2. **Un commit alla volta:** dopo l'approvazione del piano crea **solo il commit n. 1** (file aggiunti per nome, `git status` e `git diff --staged` controllati, regole di messaggio e hook come sopra) e mostra hash e oggetto.
 3. **Pausa e conferma:** dopo ogni commit si ferma e chiede se procedere con il successivo, indicando quale sarà (`n/N`, oggetto). Procede solo dopo il via dell'utente; se l'utente cambia idea sul piano, lo aggiorna e ripresenta l'elenco residuo.
 4. **Nessun via anticipato:** l'approvazione del piano non vale come approvazione di tutti i commit, e il "sì" a un commit non vale per i successivi. Un'eccezione ("fai tutti i commit di fila") vale solo per quel piano, se l'utente la dichiara esplicitamente.
@@ -48,24 +57,24 @@ Quando le modifiche da committare sono più di un'unità logica (o l'utente chie
 
 ## Cosa non entra mai nel repository
 - Segreti, `.env`, certificati, chiavi, dump di database, file generati (`bin`, `obj`, `node_modules`, `dist`) e file di IDE personali. Verifica `.gitignore` all'inizio del progetto.
-- Prima di ogni commit controlla `git status` e `git diff --staged`: aggiungi i file per nome, mai `git add -A` alla cieca. Se compare qualcosa che sembra un segreto, fermati e segnalalo.
+- Prima di ogni commit controlla `git status` e `git diff --staged`: aggiungi i file per nome, mai `git add -A` alla cieca (▲ verificato da `guard-commands`: blocca `git add -A`, `git add .` e i file sensibili). Se compare qualcosa che sembra un segreto, fermati e segnalalo.
 - **Controlli automatici sulle modifiche in stage:** `git diff --cached --check` (spazi finali, marcatori di conflitto, fine riga misti); `gitleaks` solo se è già installato sulla macchina (altrimenti lo dici, senza installarlo); segnala file aggiunti molto grandi o binari non attesi prima di committarli.
 - I lock file (`packages.lock.json`, `package-lock.json`) vanno committati; i file di build no.
 
 ## Repository, fine riga e hook
 - **Cartella non versionata:** se la cartella di lavoro non è un repository git, Claude **non esegue mai `git init`**, nemmeno se l'utente non lo vieta: si limita a **segnalare** che in quel progetto/soluzione git non è stato inizializzato e non committa. Claude non ha accesso diretto ai repository dei progetti ed è limitato ai soli commit locali; l'inizializzazione (e il collegamento a un remoto) è a cura dell'utente. Quando l'utente avrà inizializzato il repository, Claude riprende da lì.
 - **Fine riga:** il repository ha un `.gitattributes` con `* text=auto` e `eol` esplicito per i file che lo richiedono (es. `*.sh text eol=lf`, `*.ps1 text eol=crlf`); `.editorconfig` coerente. Serve perché si lavora su Windows: senza, i diff si riempiono di cambi di fine riga. Se manca, Claude lo segnala e **valuta caso per caso** se proporlo: non lo dà per scontato e non lo crea né lo committa senza il tuo ok. Se l'utente conferma, il commit è `chore(repo)` a sé, e solo se il repository esiste (Claude non lo inizializza, vedi sopra). In un progetto esistente la modifica delle regole di fine riga può cambiare molti file: va valutata con l'utente prima di toccarli.
-- **Hook pre-commit** (es. husky + lint-staged, o hook in `.githooks/`): sono parte del progetto. Claude può scriverli e committarli se richiesto; l'attivazione sulla macchina (`core.hooksPath`, `npm install`) è dell'utente. Se un hook fallisce durante un commit, Claude corregge la causa e ricrea il commit; mai `--no-verify`.
+- **Hook pre-commit** (es. husky + lint-staged, o hook in `.githooks/`): sono parte del progetto. Claude può scriverli e committarli se richiesto; l'attivazione sulla macchina (`core.hooksPath`, `npm install`) è dell'utente. Se un hook fallisce durante un commit, Claude corregge la causa e ricrea il commit (divieto di `--no-verify`: vedi «Sicurezza della cronologia»).
 - **Commit con test rossi (WIP):** di norma ogni commit builda e passa i test. Un commit con build o test rossi è ammesso solo se l'utente lo chiede esplicitamente (es. per salvare un lavoro a metà); in tal caso oggetto `chore(wip): <cosa è in corso>`, corpo che indica cosa è rotto e perché, e nessun `--amend` o riscrittura successiva senza richiesta. La pulizia (squash) prima della PR è dell'utente.
 
 ## Sicurezza della cronologia
-- Mai riscrivere cronologia che potrebbe essere già pubblicata (`rebase`, `reset`, `commit --amend` su commit non creati da te in sessione) senza conferma. Mai `push` di alcun tipo.
+- Mai riscrivere cronologia che potrebbe essere già pubblicata (`rebase`, `reset`, `commit --amend` su commit non creati da te in sessione) senza conferma. Mai `push --force` (né `--force-with-lease`). Il `push` normale solo se il progetto lo ha approvato (vedi «Integrazione GitHub: verifica e approvazione per progetto»).
 - Mai saltare gli hook (`--no-verify`) né la firma dei commit: se un hook fallisce, correggi la causa.
 - Per annullare una modifica già pubblicata usa `git revert`, non `reset`.
 - Se un segreto finisce in un commit, la rotazione del segreto viene prima di qualsiasi pulizia della cronologia.
 
 ## Pull Request (a cura dell'utente)
-Claude non apre PR. Struttura i commit perché la PR sia pulita e, solo se l'utente lo chiede, redige titolo e descrizione da incollare.
+Claude non apre PR se il progetto non lo ha approvato (vedi «Integrazione GitHub: verifica e approvazione per progetto»). In ogni caso struttura i commit perché la PR sia pulita e, solo se l'utente lo chiede, redige titolo e descrizione da incollare.
 - Una PR per issue o funzionalità, con titolo Conventional Commits; la serie di commit sul branch resta leggibile (nessun commit di "pulizia" in coda).
 - La descrizione riporta: cosa cambia e perché, come è stato testato, impatti (migrazioni, variabili d'ambiente, breaking change), riferimento all'issue (`Closes #N`) e, per la UI, screenshot o note sui temi/lingue verificati.
 - Il commit di merge (se il progetto non usa squash) ha oggetto `merge: <sintesi> (#NNN)` e un corpo che riassume l'insieme della funzionalità, con eventuali garanzie importanti (es. sicurezza, dati salvati, comportamento di default).
@@ -77,9 +86,9 @@ Claude non apre PR. Struttura i commit perché la PR sia pulita e, solo se l'ute
   - Il controllo dei commit della PR (lint Conventional Commits) si esegue solo sulle PR verso `develop`. Su una PR verso `main` l'intervallo contiene i commit di squash già in `develop`, il cui oggetto è stato controllato (o no) quando erano PR; rieseguirlo li farebbe fallire per motivi estranei alla PR.
 
 ## Rilascio
-- Versionamento SemVer. La versione vive in un solo punto (es. `Directory.Build.props`) ed è accompagnata da una voce di rilascio in `CHANGELOG.md` (le voci dei singoli interventi sono già state scritte step by step).
+- Versionamento SemVer. La versione vive in un solo punto (es. `Directory.Build.props`) ed è accompagnata da una voce di rilascio in `CHANGELOG.md` (le voci dei singoli interventi sono già state scritte step by step). La sottosezione `### Rilascio X.Y.Z` raggruppa i punti salienti per categoria, in italiano, con etichette in grassetto in quest'ordine e solo quelle che servono: **Aggiunto:** (funzioni nuove), **Modificato:** (cambi di comportamento o di configurazione), **Corretto:** (fix), **Sicurezza:** (correzioni di sicurezza). Le categorie sono etichette in grassetto dentro la sottosezione, non titoli `###`, perché i titoli `###` sono già usati per i singoli interventi.
 - Il rilascio è un commit dedicato e isolato dalle funzionalità: `chore(release): bump version to X.Y.Z`, con corpo a elenco (file di versione aggiornato, voce di rilascio aggiunta al changelog, fix inclusi). Per un fix urgente può essere nell'oggetto: `fix(scope): ... and release vX.Y.Z`.
-- Claude prepara solo il commit di bump (e solo se l'utente chiede un rilascio). Tag, pubblicazione e pipeline di release sono dell'utente.
+- Claude prepara solo il commit di bump (e solo se l'utente chiede un rilascio). Tag, pubblicazione del rilascio e pipeline di release sono dell'utente, salvo approvazione per progetto (vedi «Integrazione GitHub: verifica e approvazione per progetto»).
 
 ## Esempi di riferimento
 ```

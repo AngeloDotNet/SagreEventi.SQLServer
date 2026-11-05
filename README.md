@@ -54,7 +54,7 @@ Perché questo stack:
 
 ### Moderazione
 
-Gli eventi hanno tre stati: `InAttesa` (predefinito per le segnalazioni anonime), `Approvato` e `Rifiutato`. `GetEventi` restituisce solo gli eventi approvati e il server non si fida mai di uno stato inviato da un client. Un evento rifiutato viene conservato con una nota facoltativa, visibile solo ad `Admin` ed `Editor`: a chi l'ha segnalato non viene detto nulla e lo vede ancora come in attesa. Ritirare un evento approvato lo trasforma in un evento rifiutato e concluso, che i client usano per eliminare la copia locale alla sincronizzazione successiva.
+Gli eventi hanno tre stati: `InAttesa` (predefinito per le segnalazioni anonime), `Approvato` e `Rifiutato`. `GetEventi` restituisce solo gli eventi approvati e il server non si fida mai di uno stato inviato da un client. Un evento rifiutato viene conservato con una nota facoltativa, visibile solo ad `Admin` ed `Editor`: a chi l'ha segnalato non viene detto nulla e lo vede ancora come in attesa. Ritirare un evento approvato lo trasforma in un evento rifiutato e concluso, che i client usano per eliminare la copia locale alla sincronizzazione successiva. Gli stati sono anche nella tabella di lookup `StatiModerazione`, collegata a `Eventi.Stato` da una chiave esterna: il database rifiuta un valore che l'enum non definisce. L'enum `StatoModerazione` resta la fonte di verità, e un nuovo valore richiede una migrazione.
 
 #### Avviso via email ai moderatori
 

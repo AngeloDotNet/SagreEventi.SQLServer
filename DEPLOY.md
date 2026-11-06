@@ -193,7 +193,7 @@ Certbot aggiunge il blocco 443 (con gli stessi header, quindi `X-Forwarded-Proto
 
 ## PWA: installazione, offline e aggiornamenti
 
-L'app è una PWA: si può installare («Aggiungi a schermata Home» / «Installa app») e si apre anche senza rete. I dati restano gestiti dallo store locale (vedi README); il service worker mette in cache solo i file dell'app, **non** le chiamate `/api`.
+L'app è una PWA: si può installare («Aggiungi a schermata Home» / «Installa app») e si apre anche senza rete. I dati restano gestiti dallo store locale (vedi [Sincronizzazione e PWA](docs/sincronizzazione-pwa.md)); il service worker mette in cache solo i file dell'app, **non** le chiamate `/api`.
 
 Requisiti e comportamento:
 
